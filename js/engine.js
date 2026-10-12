@@ -16,55 +16,6 @@
     return null;
   }
 
-  // Soft click for the rhythm lesson, scheduled on the audio clock so it doesn't drift.
-  function createMetronome(intervalMs) {
-    let ctx = null;
-    let next = 0;
-    let timer = null;
-    let beats = 0;
-    const onBeat = [];
-    function click(at) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.frequency.value = beats % 5 === 0 ? 1320 : 990;
-      gain.gain.setValueAtTime(0.0001, at);
-      gain.gain.exponentialRampToValueAtTime(0.06, at + 0.003);
-      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.04);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(at);
-      osc.stop(at + 0.05);
-      const delay = Math.max(0, (at - ctx.currentTime) * 1000);
-      setTimeout(() => onBeat.forEach((f) => f(beats)), delay);
-      beats++;
-    }
-    return {
-      onBeat,
-      start(sound) {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return;
-        try { ctx = ctx || new AC(); } catch (e) { return; }
-        if (ctx.state === "suspended") ctx.resume();
-        next = ctx.currentTime + 0.05;
-        const step = intervalMs / 1000;
-        timer = setInterval(() => {
-          while (next < ctx.currentTime + 0.12) {
-            if (sound) click(next);
-            else {
-              const d = Math.max(0, (next - ctx.currentTime) * 1000);
-              const b = beats++;
-              setTimeout(() => onBeat.forEach((f) => f(b)), d);
-            }
-            next += step;
-          }
-        }, 25);
-      },
-      stop() {
-        clearInterval(timer);
-        timer = null;
-      },
-    };
-  }
-
   /**
    * opts:
    *   source       { initial(): string[], more?(n): string[], onWord?(info), done?(): bool }
@@ -72,8 +23,6 @@
    *   maxSeconds   hard cap for open-ended drills
    *   hideActive   hide the rest of a word once you start it (reading-ahead lesson)
    *   paceWpm      show a ghost cursor moving at this speed
-   *   metronomeWpm play one tick per keystroke at this speed
-   *   sound        metronome audible (default true)
    *   onStart(), onFinish(result, record), onProgress(progress)
    */
   RT.createTest = function (root, opts) {
@@ -101,7 +50,6 @@
     let s; // test state
     let ticker = null;
     let raf = null;
-    let metronome = null;
 
     function reset(sameWords) {
       stopTimers();
@@ -189,6 +137,7 @@
       if (!active) return;
       const first = s.els.find((x) => x);
       const lineH = active.offsetHeight * (2 / 1.5);
+      if (!lineH) return; // not laid out (e.g. a hidden tab): nothing to measure
       if (active.offsetTop - first.offsetTop >= lineH * 1.5) {
         const top = first.offsetTop;
         for (let j = 0; j < s.els.length; j++) {
@@ -256,11 +205,6 @@
       if (opts.onStart) opts.onStart();
       ticker = setInterval(tick, 50);
       if (opts.paceWpm) raf = requestAnimationFrame(frame);
-      if (opts.metronomeWpm) {
-        metronome = createMetronome(60000 / ((opts.metronomeWpm * 5) / 60));
-        if (opts.onBeat) metronome.onBeat.push(opts.onBeat);
-        metronome.start(opts.sound !== false);
-      }
     }
 
     function frame() {
@@ -285,8 +229,6 @@
       ticker = null;
       if (raf) cancelAnimationFrame(raf);
       raf = null;
-      if (metronome) metronome.stop();
-      metronome = null;
     }
 
     function finish(durationMs, endedOnSpace) {

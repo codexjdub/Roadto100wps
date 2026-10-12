@@ -279,15 +279,6 @@ button { font: inherit; color: inherit; }
   .caret.idle { animation: none; }
 }
 .test-hint { margin-top: 16px; color: var(--muted); font-size: 0.875rem; text-align: center; min-height: 1.3em; }
-.metronome-dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--grid);
-  vertical-align: middle;
-}
-.metronome-dot.beat { background: var(--accent); }
 
 /* --------------------------------------------------------------- results */
 .results { max-width: 920px; margin: 0 auto; }
@@ -439,6 +430,37 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
 .steps span { padding: 3px 10px; border-radius: 6px; background: var(--surface-2); color: var(--muted); }
 .steps span.on { color: var(--accent-ink); background: var(--accent-wash); font-weight: 600; }
 .steps span.done { color: var(--good-ink); }
+
+/* --------------------------------------------------------------- routine */
+.routine-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+  margin: 4px auto 0;
+}
+.routine-bar .btn { padding: 3px 10px; font-size: 0.8125rem; }
+.routine-bar.done { color: var(--good-ink); }
+.steps { flex-wrap: wrap; }
+.steps span.skipped { opacity: 0.6; }
+.routine-plan { padding-left: 20px; max-width: 720px; }
+.routine-plan li + li { margin-top: 6px; }
+.run-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
+.run-head h2 { margin: 0; }
+.run-line { font-size: 1.125rem; margin: 8px 0; }
+.verdict-ok { color: var(--good-ink); }
+.link-btn {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--accent-ink);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
+}
 
 textarea.custom {
   width: 100%;

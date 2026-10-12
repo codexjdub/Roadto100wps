@@ -45,6 +45,27 @@
 
   const drillWord = (w) => w.toLowerCase().replace(/[^a-z']/g, "").replace(/^'+|'+$/g, "");
 
+  // Stretches of seconds well below the run's typical (median) speed: [{ s, e, low }].
+  function findDips(rawPS) {
+    const med = median(rawPS);
+    const out = [];
+    if (rawPS.length < 4 || med <= 0) return out;
+    let s = 0;
+    while (s < rawPS.length) {
+      if (rawPS[s] < med * 0.65) {
+        let low = s;
+        let e = s;
+        while (e + 1 < rawPS.length && rawPS[e + 1] < med * 0.65) {
+          e++;
+          if (rawPS[e] < rawPS[low]) low = e;
+        }
+        out.push({ s, e, low });
+        s = e + 1;
+      } else s++;
+    }
+    return out;
+  }
+
   /**
    * Turn a finished test into a result.
    * rec: { words, typed, wi, events, wordTimes, typos, snapshots, durationMs, timed }
@@ -133,34 +154,21 @@
     const consistency = secs >= 2 && mean(rawPS) > 0 ? kogasa(stdev(rawPS) / mean(rawPS)) : 0;
 
     // Dips: seconds well below your typical speed in this run, with the likely cause.
-    const med = median(rawPS);
-    const dips = [];
-    if (secs >= 4 && med > 0) {
-      let s = 0;
-      while (s < secs) {
-        if (rawPS[s] < med * 0.65) {
-          let low = s;
-          let e = s;
-          while (e + 1 < secs && rawPS[e + 1] < med * 0.65) {
-            e++;
-            if (rawPS[e] < rawPS[low]) low = e;
-          }
-          const typo = errs.slice(Math.max(0, s - 1), e + 1).some((x) => x > 0);
-          const pause = paused.slice(s, e + 1).some(Boolean);
-          const wIdx = wordAt[low];
-          dips.push({
-            s: low,
-            value: Math.round(rawPS[low]),
-            word: wIdx === null ? "" : words[wIdx],
-            cause: typo ? "typo" : pause ? "pause" : "slow",
-          });
-          s = e + 1;
-        } else s++;
-      }
-      dips.sort((a, b) => a.value - b.value);
-      dips.splice(4);
-      dips.sort((a, b) => a.s - b.s);
-    }
+    const dips = findDips(rawPS).map(({ s, e, low }) => {
+      const typo = errs.slice(Math.max(0, s - 1), e + 1).some((x) => x > 0);
+      const pause = paused.slice(s, e + 1).some(Boolean);
+      const wIdx = wordAt[low];
+      return {
+        s: low,
+        value: Math.round(rawPS[low]),
+        word: wIdx === null ? "" : words[wIdx],
+        cause: typo ? "typo" : pause ? "pause" : "slow",
+      };
+    });
+    // Keep the four deepest, in time order.
+    dips.sort((a, b) => a.value - b.value);
+    dips.splice(4);
+    dips.sort((a, b) => a.s - b.s);
 
     // Letter pairs: time between two correct keys inside a word, and typos on the second key.
     const bigrams = {};
@@ -299,5 +307,5 @@
     return { gapMs: median(r.map((s) => s.medGapMs)), perCharMs: median(r.map((s) => s.medPerCharMs)) };
   }
 
-  RT.stats = { compute, correctChars, wpmOf, handOf, median, mean, kogasa, weakPairs, troubleWords, recentAverage, timingBaseline, drillWord };
+  RT.stats = { compute, findDips, correctChars, wpmOf, handOf, median, mean, kogasa, weakPairs, troubleWords, recentAverage, timingBaseline, drillWord };
 })();

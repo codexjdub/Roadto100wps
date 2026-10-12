@@ -63,8 +63,8 @@
     return [...seen].sort();
   }
 
-  function chooseText(length, theme) {
-    let pool = window.TEXTS.filter((t) => KINDS[length](t) && (theme === "all" || t.themes.includes(theme)));
+  function chooseText(length, theme, minWords = 0) {
+    let pool = window.TEXTS.filter((t) => KINDS[length](t) && t.words >= minWords && (theme === "all" || t.themes.includes(theme)));
     if (!pool.length) pool = window.TEXTS.filter((t) => KINDS[length](t));
     const fresh = pool.filter((t) => !recentTexts.includes(t.id));
     const t = pick(fresh.length ? fresh : pool);

@@ -22,7 +22,7 @@
   };
 
   function empty() {
-    return { version: 1, sessions: [], settings: Object.assign({}, DEFAULT_SETTINGS), lessons: {} };
+    return { version: 1, sessions: [], settings: Object.assign({}, DEFAULT_SETTINGS), lessons: {}, routine: null, routineDays: [] };
   }
 
   function read() {
@@ -33,6 +33,8 @@
       if (!d || !Array.isArray(d.sessions)) return empty();
       d.settings = Object.assign({}, DEFAULT_SETTINGS, d.settings || {});
       d.lessons = d.lessons || {};
+      d.routine = d.routine || null;
+      d.routineDays = Array.isArray(d.routineDays) ? d.routineDays : [];
       return d;
     } catch (e) {
       return empty();
@@ -80,6 +82,14 @@
       db.lessons[id] = Object.assign({}, db.lessons[id], data);
       write();
     },
+    // Where today's daily routine is up to: { day, step, run, cleanMisses, stopped, done }.
+    routine() { return db.routine; },
+    setRoutine(state) {
+      db.routine = state;
+      if (state && state.done && !db.routineDays.includes(state.day)) db.routineDays.push(state.day);
+      write();
+    },
+    routineDays() { return db.routineDays; },
     exportJSON() {
       return JSON.stringify({ app: "road-to-100", exported: new Date().toISOString(), data: db }, null, 1);
     },
@@ -100,6 +110,8 @@
       for (const [id, v] of Object.entries(data.lessons || {})) {
         if (!db.lessons[id]) db.lessons[id] = v;
       }
+      for (const day of data.routineDays || []) if (!db.routineDays.includes(day)) db.routineDays.push(day);
+      db.routineDays.sort();
       prune();
       write();
       return added;

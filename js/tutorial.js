@@ -35,25 +35,26 @@
     },
     {
       id: "L2",
-      title: "Steady rhythm",
-      sub: "Even speed beats bursts and stalls.",
-      why: "Consistency measures how even your speed is from one second to the next. Bursts followed by stalls lose more time than they gain, because the stalls are where the time goes. A steady 75 beats a mix of 95 and 50.",
+      title: "No stalls",
+      sub: "Slow down through hard words instead of stopping.",
+      why: "Your speed is an average, and stalls pull it down far more than bursts push it up. Your fast seconds are usually fast already. The time goes in the few seconds where you stop: a word you didn't read in time, a typo you go back for, an awkward letter pair. Fast typists aren't perfectly even (letter pairs typed with alternating hands come out quicker, and that's fine), but they rarely stop.",
       how: [
-        "A soft tick plays at about 90% of your usual speed, one tick per key. You can also watch the dot instead.",
-        "Type with the beat. Ease off on easy words and hold your pace through the hard ones, so every key takes about the same time.",
-        "If you fall behind the beat, don't sprint to catch up. Just rejoin it on the next word.",
+        "Ease off by about 10%, so you always have something in reserve for the hard words.",
+        "When a hard word comes up, slow down through it instead of stopping in front of it.",
+        "Keep your eyes a word ahead (lesson 1), so nothing catches you by surprise.",
+        "The results graph numbers each slowdown and shows what caused it.",
       ],
       stat(sessions) {
-        const r = recent(sessions).filter((s) => s.consistency);
+        const r = recent(sessions).filter((s) => s.perSecond && s.perSecond.raw.length >= 10);
         if (r.length < 3) return null;
-        return `Your consistency over your last ${r.length} runs: ${pct(RT.stats.mean(r.map((s) => s.consistency)))}. The target here is 80%.`;
+        const per30 = RT.stats.mean(r.map((s) => (RT.stats.findDips(s.perSecond.raw).length * 30) / s.perSecond.raw.length));
+        return `Over your last ${r.length} runs you had about ${per30.toFixed(1)} slowdowns per 30 seconds. The target here is one or none.`;
       },
-      metronome: true,
       steps: [{
-        name: "Type to the beat",
-        make: (c) => ({ source: RT.sources.randomWords(window.WORDS_200), seconds: 30, metronomeWpm: Math.round(c.avg * 0.9) }),
-        goal: (c) => `Consistency of 80% or more, at ${Math.round(c.avg * 0.85)} WPM or faster.`,
-        check: (r, c) => r.consistency >= 80 && r.wpm >= c.avg * 0.85,
+        name: "Smooth run",
+        make: () => ({ source: RT.sources.randomWords(window.WORDS_200), seconds: 30 }),
+        goal: (c) => `At most one slowdown, at ${Math.round(c.avg * 0.85)} WPM or faster.`,
+        check: (r, c) => r.dips.length <= 1 && r.wpm >= c.avg * 0.85,
       }],
     },
     {
@@ -235,22 +236,9 @@
     let step = 0;
     const stepsEl = h("div", { class: "steps" });
     const goalEl = h("p", { class: "ink-2" });
-    const soundRow = lesson.metronome ? h("div", { class: "row small ink-2" }) : null;
     const testEl = h("div");
     const afterEl = h("div");
-    let sound = true;
-    const beatDot = h("span", { class: "metronome-dot", "aria-hidden": "true" });
-    main.append(h("h2", {}, "Exercise"), stepsEl, goalEl);
-    if (soundRow) {
-      const btn = h("button", { class: "btn", type: "button", onclick: () => {
-        sound = !sound;
-        btn.textContent = sound ? "Sound on" : "Sound off";
-        startStep();
-      } }, "Sound on");
-      soundRow.append(beatDot, h("span", {}, "Beat"), btn);
-      main.append(soundRow);
-    }
-    main.append(testEl, afterEl);
+    main.append(h("h2", {}, "Exercise"), stepsEl, goalEl, testEl, afterEl);
 
     function drawSteps() {
       stepsEl.innerHTML = "";
@@ -269,11 +257,6 @@
       testEl.hidden = false;
       const made = st.make(c);
       const test = RT.app.startTest(testEl, Object.assign({}, made, {
-        sound,
-        onBeat: () => {
-          beatDot.classList.add("beat");
-          setTimeout(() => beatDot.classList.remove("beat"), 80);
-        },
         onFinish(result) {
           RT.app.saveSession(result, { mode: "lesson", lesson: lesson.id, label: `Lesson ${idx + 1}: ${st.name}`, textId: made.text && made.text.id });
           const pass = st.check(result, c);

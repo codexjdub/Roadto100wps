@@ -22,7 +22,11 @@
     }
     return el;
   }
-  RT.ui = { h };
+  const dayKey = (ts) => {
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  RT.ui = { h, dayKey };
 
   const round = (x) => Math.round(x);
   const pct = (x) => `${Math.round(x)}%`;
@@ -30,10 +34,6 @@
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many || one + "s"}`;
   const fmtSecs = (ms) => `${(ms / 1000).toFixed(1)} s`;
   const fmtDate = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  const dayKey = (ts) => {
-    const d = new Date(ts);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  };
   const coreSessions = () => store.sessions().filter((s) => s.mode !== "lesson");
 
   function averageWpm() {
@@ -100,8 +100,15 @@
     return secs.filter((x) => x === 0).length >= Math.max(5, secs.length * 0.3);
   }
 
+  // Why a run won't be saved: "idle" (stopped typing), "short" (too little to measure), or null.
+  function unsavedReason(r) {
+    if (wasIdle(r)) return "idle";
+    if (r.durationMs < 3000 || r.wordsTyped < 3) return "short";
+    return null;
+  }
+
   function saveSession(r, meta) {
-    if (r.durationMs < 5000 || r.wordsTyped < 3 || wasIdle(r)) return null;
+    if (unsavedReason(r)) return null;
     const one = (x) => Math.round(x * 10) / 10;
     const session = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
@@ -111,6 +118,8 @@
       seconds: meta.seconds,
       textId: meta.textId,
       lesson: meta.lesson,
+      routine: meta.routine || undefined,
+      check: meta.check || undefined,
       wpm: one(r.wpm),
       raw: one(r.raw),
       acc: one(r.acc),
@@ -281,8 +290,9 @@
         h("span", { class: r.wpm >= prevAvg ? "delta-up" : "delta-down" }, `This run: ${r.wpm >= prevAvg ? "+" : ""}${round(r.wpm - prevAvg)}.`)) : null,
     );
     el.append(h("div", { class: "results-grid" }, big, right));
-    if (wasIdle(r)) el.append(h("div", { class: "callout" }, "It looks like you stopped typing for a while, so this run wasn't saved to your history."));
-    else if (r.durationMs < 5000 || r.wordsTyped < 3) el.append(h("div", { class: "callout" }, "Runs shorter than 5 seconds aren't saved to your history."));
+    const unsaved = unsavedReason(r);
+    if (unsaved === "idle") el.append(h("div", { class: "callout" }, "It looks like you stopped typing for a while, so this run wasn't saved to your history."));
+    else if (unsaved === "short") el.append(h("div", { class: "callout" }, "Runs shorter than 3 seconds or 3 words aren't saved to your history."));
     if (o.text) el.append(textCredit(o.text));
     if (r.perSecond.raw.length >= 2) el.append(perSecondChart(r));
     el.append(h("div", { class: "insights" }, insightCards(r, o.compact)));
@@ -303,7 +313,7 @@
     const extraEl = h("div");
     const testEl = h("div");
     const resultsEl = h("div", { class: "results", hidden: true });
-    main.append(cfgEl, infoEl, extraEl, testEl, resultsEl);
+    main.append(RT.routine.bar(), cfgEl, infoEl, extraEl, testEl, resultsEl);
     let last = null; // { opts, meta, text, record }
 
     function seg(label, key, options) {
@@ -468,7 +478,7 @@
       return;
     }
 
-    // Lesson runs (hidden words, metronome) aren't normal typing, so they stay out of the averages.
+    // Lesson runs (hidden words, targets) aren't normal typing, so they stay out of the averages.
     const filters = {
       all: (s) => s.mode !== "lesson",
       words: (s) => s.mode === "words",
@@ -503,6 +513,8 @@
       tile("Best in range", inRange.length ? String(round(best)) : "-", "WPM"),
       tile("Accuracy, last 10", last10.length ? pct(RT.stats.mean(last10.map((s) => s.acc))) : "-"),
       tile("Consistency, last 10", last10.length ? pct(RT.stats.mean(last10.map((s) => s.consistency))) : "-"),
+      tile("Routine streak", (() => { const n = RT.routine.streak(); return n ? `${n} ${n === 1 ? "day" : "days"}` : "-"; })(),
+        plural(store.routineDays().length, "day") + " in total"),
       tile("Practice in range", practiceMs && practiceMs < 60000 ? "<1 min" : `${round(practiceMs / 60000)} min`, plural(inRange.length, "run")),
     ));
 
@@ -610,6 +622,26 @@
     } else wordCard.append(h("p", { class: "ink-2" }, "Nothing yet."));
     weak.append(pairCard, wordCard);
     main.append(h("div", { class: "section-head", style: "margin-top:28px" }, h("h2", {}, "Weak spots"), h("span", { class: "small muted" }, "From your last 40 runs")), weak);
+
+    // Weekly 60-second checks from the daily routine
+    const checks = all.filter((s) => s.check);
+    if (checks.length) {
+      main.append(h("div", { class: "section" },
+        h("div", { class: "section-head" }, h("h2", {}, "Weekly checks"), h("span", { class: "small muted" }, "60-second tests from the daily routine")),
+        h("div", { class: "card table-scroll" }, h("table", { class: "data" },
+          h("thead", {}, h("tr", {}, h("th", {}, "Date"), h("th", { class: "num" }, "WPM"), h("th", { class: "num" }, "Acc"), h("th", { class: "num" }, "Change"))),
+          h("tbody", {}, checks.slice().reverse().map((s, k, arr) => {
+            const prev = arr[k + 1];
+            const diff = prev ? round(s.wpm - prev.wpm) : null;
+            return h("tr", {},
+              h("td", {}, fmtDate(new Date(s.ts))),
+              h("td", { class: "num" }, String(round(s.wpm))),
+              h("td", { class: "num" }, pct(s.acc)),
+              h("td", { class: "num" + (diff > 0 ? " trend-faster" : "") }, diff == null ? "-" : `${diff > 0 ? "+" : ""}${diff}`));
+          })),
+        )),
+      ));
+    }
 
     // Recent runs
     const recentRuns = all.slice(-20).reverse();
@@ -776,6 +808,7 @@
     if (page === "learn" && parts[1]) RT.tutorial.renderLesson(main, parts[1]);
     else if (page === "learn") { setActive(null); RT.tutorial.renderList(main); }
     else if (page === "progress") renderProgress(main);
+    else if (page === "routine") RT.routine.render(main);
     else if (page === "about") renderAbout(main);
     else renderType(main);
     window.scrollTo(0, 0);
@@ -788,7 +821,7 @@
     else location.hash = hash;
   }
 
-  RT.app = { saveSession, renderResults, setActive, startTest };
+  RT.app = { saveSession, unsavedReason, renderResults, textCredit, setActive, startTest, averageWpm };
 
   window.addEventListener("hashchange", route);
   applyTheme();
