@@ -2,7 +2,9 @@
 (function () {
   const RT = (window.RT = window.RT || {});
   const MAX_EXTRA = 10;      // extra letters allowed past the end of a word
-  const BUFFER_AHEAD = 40;   // timed tests keep at least this many words queued
+  const SHOW_WPM = 110;      // timed tests show enough words up front for this speed
+  const BUFFER_AHEAD = 15;   // ...and add more at the bottom if you get within this many of the end
+  const BUFFER_CHUNK = 25;
   const SHIFTED = /[A-Z~!@#$%^&*()_+{}|:"<>?]/;
 
   // Which Shift key is held, tracked globally (keyup can happen outside the test).
@@ -53,7 +55,12 @@
 
     function reset(sameWords) {
       stopTimers();
-      const words = sameWords && s ? s.words.slice(0, s.initialCount) : opts.source.initial().slice();
+      let words = sameWords && s ? s.words.slice(0, s.initialCount) : opts.source.initial().slice();
+      // The text never moves while you type, so a timed test shows all of its words at once.
+      if (opts.seconds && opts.source.more) {
+        const need = Math.ceil((opts.seconds * SHOW_WPM) / 60);
+        words = words.length >= need ? words.slice(0, need) : words.concat(opts.source.more(need - words.length));
+      }
       s = {
         words,
         initialCount: words.length,
@@ -101,7 +108,7 @@
     function ensureBuffer() {
       if (!opts.source.more) return;
       if (s.words.length - s.wi < BUFFER_AHEAD) {
-        const more = opts.source.more(BUFFER_AHEAD + 20);
+        const more = opts.source.more(BUFFER_CHUNK);
         if (!more || !more.length) return;
         const from = s.words.length;
         s.words.push(...more);
@@ -131,31 +138,6 @@
       w.classList.toggle("hide", !!opts.hideActive && j === s.wi && t.length > 0);
     }
 
-    // Keep the active word on the second visible line by dropping the first line.
-    function scrollLines() {
-      const active = s.els[s.wi];
-      if (!active) return;
-      const first = s.els.find((x) => x);
-      const lineH = active.offsetHeight * (2 / 1.5);
-      if (!lineH) return; // not laid out (e.g. a hidden tab): nothing to measure
-      if (active.offsetTop - first.offsetTop >= lineH * 1.5) {
-        // Measure the whole top line before removing anything: each removal reflows the text,
-        // and words from the next line would otherwise move up and get removed too.
-        const top = first.offsetTop;
-        const topLine = [];
-        for (let j = 0; j < s.els.length; j++) {
-          const w = s.els[j];
-          if (!w) continue;
-          if (w.offsetTop !== top) break;
-          topLine.push(j);
-        }
-        for (const j of topLine) {
-          s.els[j].remove();
-          s.els[j] = null;
-        }
-      }
-    }
-
     function letterBox(j, i) {
       const w = s.els[j];
       if (!w) return null;
@@ -171,6 +153,17 @@
       if (!box) return;
       const y = box.y + (box.h - caretEl.offsetHeight) / 2;
       caretEl.style.transform = `translate(${box.x}px, ${y}px)`;
+      if (s.started) keepInView(box);
+    }
+
+    // A long passage can be taller than the window. The text stays put; the page scrolls
+    // only when the cursor is about to go off the bottom (or top) of the screen.
+    function keepInView(box) {
+      const top = wordsEl.getBoundingClientRect().top + box.y;
+      if (top > window.innerHeight - box.h * 3 || top < 0) {
+        const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        window.scrollBy({ top: top - window.innerHeight / 3, behavior: reduce ? "auto" : "smooth" });
+      }
     }
 
     function placeGhost(elapsed) {
@@ -331,7 +324,6 @@
       ensureBuffer();
       renderWord(j);
       renderWord(s.wi);
-      scrollLines();
       placeCaret();
       updateLive(t);
     }

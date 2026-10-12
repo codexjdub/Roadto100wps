@@ -243,8 +243,6 @@ button { font: inherit; color: inherit; }
   position: relative;
   font-family: var(--mono);
   font-size: 1.6rem;
-  height: 6em;               /* three lines of 2em */
-  overflow: hidden;
   cursor: text;
   user-select: none;
   -webkit-user-select: none;
