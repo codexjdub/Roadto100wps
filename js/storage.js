@@ -1,7 +1,9 @@
 // Saves sessions, settings and lesson progress in this browser (localStorage).
 (function () {
   const RT = (window.RT = window.RT || {});
-  const KEY = "rt100.v1";
+  // Test pages (?test in the URL) keep their own data so they never touch your history.
+  const testing = typeof location !== "undefined" && /[?&]test\b/.test(location.search);
+  const KEY = testing ? "rt100.test" : "rt100.v1";
   const DETAIL_LIMIT = 300; // keep per-key detail for the most recent sessions only
 
   const DEFAULT_SETTINGS = {

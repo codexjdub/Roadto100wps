@@ -22,6 +22,18 @@ Everything is saved in your browser's localStorage, and nothing is sent anywhere
 
 Open `index.html` in a browser. There's no build step and there are no dependencies.
 
+## Tests
+
+Two sets of tests, neither needing anything installed beyond Node and Chrome. GitHub runs both on every push (see the Actions tab).
+
+- **Logic tests** for scoring, slowdown detection, letter pairs, drills, the text collection, saving and importing history, and the routine's steps:
+
+  ```bash
+  node --test tests/*.test.js
+  ```
+
+- **Browser tests** that load the real app and type into it: text never vanishing past five lines, results with nothing broken, typo costs, the theme button, a full daily routine, and no "null" or "NaN" on any page. Run them headless with `bash tools/browser_tests.sh`, or open `tests/browser.html` from any local web server to watch them run. They use separate test storage, so your history is never touched.
+
 ## Versions
 
 The footer shows which version you're running, and tells you when the site has a newer one. Before pushing a change, run `python3 tools/bump_version.py <new version>`. It updates `version.json`, the version in `index.html`, and the `?v=` on every file link, so browsers load the new files instead of cached ones.

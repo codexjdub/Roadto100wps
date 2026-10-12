@@ -888,7 +888,7 @@
     else location.hash = hash;
   }
 
-  RT.app = { saveSession, unsavedReason, renderResults, textCredit, setActive, startTest, averageWpm };
+  RT.app = { saveSession, unsavedReason, renderResults, textCredit, setActive, startTest, averageWpm, isNewer };
 
   window.addEventListener("hashchange", route);
   applyTheme();

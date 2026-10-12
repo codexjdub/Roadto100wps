@@ -151,6 +151,15 @@
     }
   }
 
+  // After a saved run: two clean runs in a row under TIRED_BELOW end the day, otherwise move on.
+  function recordRun(s, ctx, kind, acc) {
+    if (kind === "clean") s.cleanMisses = acc < TIRED_BELOW ? s.cleanMisses + 1 : 0;
+    if (s.cleanMisses >= 2) {
+      s.stopped = "tired";
+      s.done = true;
+    } else advance(s, ctx);
+  }
+
   function counts(s, ctx) {
     let done = 0;
     let total = 0;
@@ -271,11 +280,7 @@
           RT.app.setActive({ onTab: again, onEnter: again });
           return;
         }
-        if (made.kind === "clean") s.cleanMisses = result.acc < TIRED_BELOW ? s.cleanMisses + 1 : 0;
-        if (s.cleanMisses >= 2) {
-          s.stopped = "tired";
-          s.done = true;
-        } else advance(s, ctx);
+        recordRun(s, ctx, made.kind, result.acc);
         RT.store.setRoutine(s);
         afterRun(afterEl, s, result, step.verdict ? step.verdict(result, ctx, made) : null, made.text);
       },
@@ -355,5 +360,5 @@
     return { started: s.started, done: s.done, doneRuns: c.done, total: c.total, streak: streak() };
   }
 
-  RT.routine = { STEPS, render, status, streak, lastCheck };
+  RT.routine = { STEPS, render, status, streak, lastCheck, logic: { state, skipUnavailable, advance, recordRun, counts } };
 })();
