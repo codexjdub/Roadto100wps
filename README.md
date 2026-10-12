@@ -1,0 +1,27 @@
+# Road to 100
+
+A typing trainer for getting from the 60s to 100 words per minute. Beyond measuring your speed, it finds what slows you down: pauses before words, slow letter pairs, and typos along with how long they take to fix. Then it builds practice around those.
+
+**Use it here:** https://codexjdub.github.io/Roadto100wps/
+
+## What's in it
+
+- **Tests.** 15, 30 or 60 second word tests, scored the same way as Monkeytype so the numbers compare directly. Also quotes, paragraphs and long passages from classic books, *The Art of War* and Wikipedia, with an option to type them in lowercase without punctuation.
+- **Results that explain themselves.** A per-second speed graph with each slowdown numbered and labelled (for example "right after a typo in 'between'"), what your typos cost, the words you paused on, and your slowest letter pairs.
+- **Drills.** Words or sentences full of your slowest letter pairs, a trouble-word drill that brings back each word you hesitate on until you type it smoothly twice, and an optional pace cursor to race.
+- **Learn.** Seven short lessons (reading ahead, rhythm, typo recovery, common words, Shift and punctuation, push and clean, relaxed hands), each with an exercise and a target to pass.
+- **Progress.** Speed, accuracy and consistency by day against the 100 WPM goal, plus your weak spots over time.
+
+## Your data
+
+Everything is saved in your browser's localStorage, and nothing is sent anywhere. Use **Export history** on the Progress page to back it up or move it to another computer.
+
+## Running it locally
+
+Open `index.html` in a browser. There's no build step and there are no dependencies.
+
+## Texts and licences
+
+- Classic texts are in the public domain and come from [Project Gutenberg](https://www.gutenberg.org/). Each text is cut word for word from its source; only curly quotes, dashes and accented letters were changed to characters you can type.
+- Wikipedia excerpts are by Wikipedia contributors, licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). They were lightly edited for typing: pronunciations and non-English scripts were removed, and special characters were replaced. Each entry in `js/texts.js` links to the exact article revision used, and the edited excerpts are available under the same licence.
+- `tools/build_texts.py` rebuilds `js/texts.js`. It downloads each source and cuts out the text between a start and an end phrase, so adding a quote means adding one line with its anchors.
