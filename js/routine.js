@@ -2,7 +2,7 @@
 (function () {
   const RT = (window.RT = window.RT || {});
 
-  const PUSH_ABOVE = 15;   // push runs: pace cursor this many WPM above your average
+  const PUSH_ABOVE = 15;   // push runs aim this many WPM above your average
   const PUSH_TARGET = 10;  // ...and a push counts as kept up at this much above it
   const CLEAN_TARGET = 98; // clean runs: accuracy to aim for
   const TIRED_BELOW = 90;  // two clean runs in a row under this ends the day early
@@ -52,9 +52,9 @@
           return {
             kind: "push",
             title: "Push",
-            opts: { source: words200(), seconds: 30, paceWpm: pace },
+            opts: { source: words200(), seconds: 30 },
             meta: { mode: "words", seconds: 30, label: "Routine: push" },
-            goal: `Stay with the orange cursor (${pace} WPM). Mistakes are fine in this run.`,
+            goal: `Type faster than feels comfortable. Aim for ${pace} WPM; mistakes are fine in this run.`,
           };
         }
         return {

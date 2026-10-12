@@ -15,8 +15,6 @@
     simplified: false,
     drill: "pairs",         // pairs | words
     drillAs: "words",       // words | sentences
-    pace: "off",            // off | auto | fixed
-    paceWpm: 80,
     customText: "",
     themeMode: "auto",      // auto | light | dark
     progressFilter: "all",

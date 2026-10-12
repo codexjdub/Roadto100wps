@@ -121,8 +121,32 @@
     assert(text.includes("Next lesson: 2."), "lesson 1 is done, so lesson 2 should be next");
   });
 
+  it("the Home calendar shows practice days, with details for each", async () => {
+    await boot("#/home", { data: history() });
+    const marked = () => doc.querySelectorAll(".cal-day.practised, .cal-day.routine");
+    // early in a month the seeded days may all be in the month before
+    if (!marked().length) doc.querySelector('.cal-head [aria-label="Previous month"]').click();
+    await waitFor(() => marked().length >= 2, "practice days on the calendar");
+    assert(doc.querySelector(".cal-day.routine"), "yesterday's routine isn't marked");
+    const day = marked()[0];
+    assert(/^\d+$/.test(day.querySelector(".cal-wpm").textContent), "no WPM on a practice day");
+    day.click();
+    assert(/average \d+ WPM/.test(doc.querySelector(".cal-detail").textContent), "clicking a day shows no details");
+    assertClean("the calendar");
+  });
+
+  it("no pace cursor appears in the text", async () => {
+    const data = history();
+    data.routine = { day: dayKey(Date.now()), started: true, step: 1, run: 0, cleanMisses: 0, skipped: [], stopped: null, done: false };
+    await boot("#/routine", { data });
+    assert(/push run/.test(pageText()) && /Aim for \d+ WPM/.test(pageText()), "the push run doesn't state its target");
+    await typeWords(3, 15);
+    assert(!doc.querySelector(".ghost"), "a pace cursor is in the text");
+    key("Escape");
+  });
+
   it("typing past five lines never removes or moves the text", async () => {
-    await boot("#/type", { settings: { mode: "words", seconds: 60, pace: "off" } });
+    await boot("#/type", { settings: { mode: "words", seconds: 60 } });
     const first = doc.querySelector(".words .word");
     const top = first.getBoundingClientRect().top;
     const count = doc.querySelectorAll(".words .word").length;

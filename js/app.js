@@ -40,11 +40,6 @@
     return RT.stats.recentAverage(coreSessions()) || RT.stats.recentAverage(store.sessions());
   }
 
-  function autoPace() {
-    const avg = averageWpm();
-    return avg ? Math.round(avg + 8) : 70;
-  }
-
   // ------------------------------------------------------- active test & keys
 
   let active = null; // { test, onTab, onEsc, onEnter }
@@ -355,14 +350,6 @@
           onclick: () => { store.set("simplified", !st.simplified); drawConfig(); newTest(); },
         }, "simplified")));
       }
-      cfgEl.append(h("span", { class: "divider", "aria-hidden": "true" }));
-      cfgEl.append(seg("pace cursor", "pace", [["off", "off"], ["auto", `auto (${autoPace()})`], ["fixed", "set"]]));
-      if (st.pace === "fixed") {
-        cfgEl.append(h("input", {
-          type: "number", min: 10, max: 250, value: st.paceWpm, "aria-label": "Pace in WPM",
-          onchange: (e) => { const v = Math.max(10, Math.min(250, Number(e.target.value) || 80)); store.set("paceWpm", v); e.target.blur(); newTest(); },
-        }));
-      }
     }
 
     function showEmpty(title, text, action) {
@@ -434,10 +421,6 @@
         meta = { mode: "custom", label: "Your text" };
       }
 
-      if (!repeat) {
-        if (st.pace === "auto") opts.paceWpm = autoPace();
-        else if (st.pace === "fixed") opts.paceWpm = st.paceWpm;
-      }
       const prevAvg = averageWpm();
       const test = startTest(testEl, opts, {
         onTab: () => newTest(),
@@ -453,7 +436,6 @@
           onNext: () => newTest(), onRepeat: () => newTest(true),
         });
         setActive({ onTab: () => newTest(), onEsc: () => newTest(true), onEnter: () => newTest() });
-        drawConfig(); // the auto pace label may have changed
       };
     }
 

@@ -6,11 +6,11 @@ A typing trainer for getting from the 60s to 100 words per minute. Beyond measur
 
 ## What's in it
 
-- **Home.** Always shows your next step. On a first visit: measure your starting speed, try the daily routine, then the lessons. After that: today's routine, your average and streak, and your next lesson.
+- **Home.** Always shows your next step. On a first visit: measure your starting speed, try the daily routine, then the lessons. After that: today's routine, your average and streak, your next lesson, and a month calendar showing each practice day's average WPM and the days you finished the routine.
 - **Practice.** 15, 30 or 60 second word tests, scored the same way as Monkeytype so the numbers compare directly. Also quotes, paragraphs and long passages from classic books, *The Art of War* and Wikipedia, with an option to type them in lowercase without punctuation.
 - **Results that explain themselves.** A per-second speed graph with each slowdown numbered and labelled (for example "right after a typo in 'between'"), what your typos cost, the words you paused on, and your slowest letter pairs.
 - **Daily routine.** About 20 minutes in a set order: a weak-pair warm-up, 10 runs taking turns between pushing past your pace and typing cleanly, trouble words, real text, and a 60-second check once a week. It picks up where you left off that day, stops early if your accuracy drops (a sign you're tired), and keeps a streak.
-- **Drills.** Words or sentences full of your slowest letter pairs, a trouble-word drill that brings back each word you hesitate on until you type it smoothly twice, and an optional pace cursor to race.
+- **Drills.** Words or sentences full of your slowest letter pairs, and a trouble-word drill that brings back each word you hesitate on until you type it smoothly twice.
 - **Lessons.** Seven short lessons (reading ahead, no stalls, typo recovery, common words, Shift and punctuation, push and clean, relaxed hands), each with an exercise and a target to pass.
 - **Progress.** Speed, accuracy and consistency by day against the 100 WPM goal, plus your weak spots over time.
 

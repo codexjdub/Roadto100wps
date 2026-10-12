@@ -137,18 +137,18 @@
       sub: "The training method for breaking a plateau.",
       why: "Your top speed only rises if you sometimes type faster than feels comfortable, and your accuracy only holds if you sometimes slow down and type cleanly. Alternating between the two is how most people break through a plateau.",
       how: [
-        "Run 1, push: an orange cursor runs about 15 WPM above your average. Stay with it. Mistakes are fine here.",
+        "Run 1, push: type faster than feels comfortable, aiming for about 15 WPM above your average. Mistakes are fine here.",
         "Run 2, clean: type at whatever speed lets you finish with 98% accuracy or more.",
-        "In your daily practice, keep alternating: one push run, then one clean run. You can turn on the pace cursor from the Type page.",
+        "In your daily practice, keep alternating: one push run, then one clean run. The daily routine does this for you.",
       ],
       stat: (sessions) => {
         const avg = RT.stats.recentAverage(sessions);
-        return avg ? `Your recent average is ${Math.round(avg)} WPM, so the push run's cursor moves at ${Math.round(avg + 15)}.` : null;
+        return avg ? `Your recent average is ${Math.round(avg)} WPM, so aim for ${Math.round(avg + 15)} on the push run.` : null;
       },
       steps: [
         {
           name: "Push",
-          make: (c) => ({ source: RT.sources.randomWords(window.WORDS_200), seconds: 30, paceWpm: Math.round(c.avg + 15) }),
+          make: () => ({ source: RT.sources.randomWords(window.WORDS_200), seconds: 30 }),
           goal: (c) => `Raw speed of ${Math.round(c.avg + 10)} WPM or faster. Accuracy doesn't matter in this run.`,
           check: (r, c) => r.raw >= c.avg + 10,
         },

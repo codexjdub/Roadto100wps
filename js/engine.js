@@ -24,7 +24,6 @@
    *   seconds      time limit; 0 means the test ends at the end of the text
    *   maxSeconds   hard cap for open-ended drills
    *   hideActive   hide the rest of a word once you start it (reading-ahead lesson)
-   *   paceWpm      show a ghost cursor moving at this speed
    *   onStart(), onFinish(result, record), onProgress(progress)
    */
   RT.createTest = function (root, opts) {
@@ -35,14 +34,12 @@
       <div class="test-top" aria-live="off"><span class="live-main"></span><span class="live-wpm"></span><span class="test-hint"></span><span class="caps" hidden>Caps Lock is on</span></div>
       <div class="words-wrap" role="textbox" aria-label="Typing area. Start typing to begin.">
         <div class="words"></div>
-        <div class="ghost" hidden></div>
         <div class="caret idle"></div>
       </div>`;
     root.appendChild(el);
     const $ = (s) => el.querySelector(s);
     const wordsEl = $(".words");
     const caretEl = $(".caret");
-    const ghostEl = $(".ghost");
     const liveMain = $(".live-main");
     const liveWpm = $(".live-wpm");
     const capsEl = $(".caps");
@@ -50,7 +47,6 @@
 
     let s; // test state
     let ticker = null;
-    let raf = null;
 
     function reset(sameWords) {
       stopTimers();
@@ -74,12 +70,10 @@
         open: null,
         snapshots: [],
         els: [],
-        starts: [],        // character offset of each word, for the pace cursor
       };
       wordsEl.innerHTML = "";
       appendWords(words, 0);
       caretEl.classList.add("idle");
-      ghostEl.hidden = true;
       liveWpm.textContent = "";
       updateLive(0);
       hintEl.textContent = opts.hint || "Type the grey text. The timer starts with your first key. Tab gives you a new test.";
@@ -98,7 +92,6 @@
           w.appendChild(sp);
         }
         s.els[j] = w;
-        s.starts[j] = j === 0 ? 0 : s.starts[j - 1] + s.words[j - 1].length + 1;
         frag.appendChild(w);
       });
       wordsEl.appendChild(frag);
@@ -165,23 +158,6 @@
       }
     }
 
-    function placeGhost(elapsed) {
-      const cps = (opts.paceWpm * 5) / 60000;
-      const idx = Math.floor(elapsed * cps);
-      // find the word containing this character offset
-      let lo = 0, hi = s.words.length - 1;
-      while (lo < hi) {
-        const mid = (lo + hi + 1) >> 1;
-        if (s.starts[mid] <= idx) lo = mid; else hi = mid - 1;
-      }
-      const i = Math.min(idx - s.starts[lo], s.words[lo].length);
-      const box = letterBox(lo, i);
-      if (!box || lo >= s.words.length) { ghostEl.hidden = true; return; }
-      ghostEl.hidden = false;
-      const y = box.y + (box.h - ghostEl.offsetHeight) / 2;
-      ghostEl.style.transform = `translate(${box.x}px, ${y}px)`;
-    }
-
     function updateLive(elapsed) {
       if (opts.seconds) {
         const left = Math.max(0, Math.ceil(opts.seconds - elapsed / 1000));
@@ -205,13 +181,6 @@
       hintEl.textContent = "";
       if (opts.onStart) opts.onStart();
       ticker = setInterval(tick, 50);
-      if (opts.paceWpm) raf = requestAnimationFrame(frame);
-    }
-
-    function frame() {
-      if (!s.started || s.finished) return;
-      placeGhost(performance.now() - s.t0);
-      raf = requestAnimationFrame(frame);
     }
 
     function tick() {
@@ -228,8 +197,6 @@
     function stopTimers() {
       clearInterval(ticker);
       ticker = null;
-      if (raf) cancelAnimationFrame(raf);
-      raf = null;
     }
 
     function finish(durationMs, endedOnSpace) {
@@ -237,7 +204,6 @@
       s.finished = true;
       stopTimers();
       caretEl.classList.add("idle");
-      ghostEl.hidden = true;
       const record = {
         words: s.words,
         typed: s.typed,

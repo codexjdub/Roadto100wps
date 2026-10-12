@@ -3,11 +3,9 @@
   const RT = (window.RT = window.RT || {});
 
   function startingSpeed() {
-    const s = RT.store.settings();
     RT.store.set("mode", "words");
     RT.store.set("seconds", 60);
     RT.store.set("wordList", "200");
-    if (s.pace !== "off") RT.store.set("pace", "off");
     location.hash = "#/type";
   }
 
@@ -83,10 +81,13 @@
     const lesson = nextLesson();
     const idx = lesson ? RT.tutorial.LESSONS.indexOf(lesson) + 1 : 0;
 
+    const calendar = h("div");
+    RT.calendar.render(calendar);
     main.append(
       h("h1", {}, "Today"),
       card,
       h("p", { class: "today-facts" }, facts.map((f, k) => [k ? " \u00b7 " : "", f])),
+      calendar,
       h("ul", { class: "today-links" },
         lesson
           ? h("li", {}, "Next lesson: ", h("a", { href: `#/learn/${lesson.id}` }, `${idx}. ${lesson.title} \u2192`))
