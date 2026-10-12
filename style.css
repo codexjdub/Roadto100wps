@@ -164,8 +164,7 @@ button { font: inherit; color: inherit; }
   color: var(--muted);
   font-size: 0.8125rem;
 }
-.foot-note, .foot-version { width: 100%; text-align: center; }
-.foot-version { margin-top: -10px; }
+.foot-note { width: 100%; text-align: center; }
 .foot-version.stale { color: var(--ink); }
 
 /* --------------------------------------------------------------- buttons */

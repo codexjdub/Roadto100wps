@@ -842,8 +842,7 @@
     const el = document.getElementById("version");
     const v = window.APP_VERSION;
     if (!el || !v) return;
-    const date = new Date(`${window.APP_DATE}T12:00:00`);
-    el.textContent = `Version ${v} \u00b7 ${date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
+    el.textContent = ` \u00b7 Version ${v}`;
     fetch("version.json", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((latest) => {
