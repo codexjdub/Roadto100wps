@@ -139,10 +139,19 @@
       const lineH = active.offsetHeight * (2 / 1.5);
       if (!lineH) return; // not laid out (e.g. a hidden tab): nothing to measure
       if (active.offsetTop - first.offsetTop >= lineH * 1.5) {
+        // Measure the whole top line before removing anything: each removal reflows the text,
+        // and words from the next line would otherwise move up and get removed too.
         const top = first.offsetTop;
+        const topLine = [];
         for (let j = 0; j < s.els.length; j++) {
           const w = s.els[j];
-          if (w && w.offsetTop === top) { w.remove(); s.els[j] = null; }
+          if (!w) continue;
+          if (w.offsetTop !== top) break;
+          topLine.push(j);
+        }
+        for (const j of topLine) {
+          s.els[j].remove();
+          s.els[j] = null;
         }
       }
     }
