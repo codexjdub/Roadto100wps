@@ -789,6 +789,36 @@
     route(); // charts read colours at draw time
   });
 
+  // The footer shows this page's version, and says so when the site has a newer one
+  // (browsers can keep serving an old copy for a few minutes after an update).
+  function isNewer(a, b) {
+    const pa = String(a).split(".").map(Number);
+    const pb = String(b).split(".").map(Number);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+      const d = (pa[i] || 0) - (pb[i] || 0);
+      if (d) return d > 0;
+    }
+    return false;
+  }
+
+  function showVersion() {
+    const el = document.getElementById("version");
+    const v = window.APP_VERSION;
+    if (!el || !v) return;
+    const date = new Date(`${window.APP_DATE}T12:00:00`);
+    el.textContent = `Version ${v} \u00b7 ${date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
+    fetch("version.json", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((latest) => {
+        if (!latest || !isNewer(latest.version, v)) return;
+        el.classList.add("stale");
+        el.append(" \u00b7 ", h("strong", {}, `A newer version (${latest.version}) is available.`), " ",
+          // A new URL skips any cached copy of the page itself.
+          h("a", { href: `${location.pathname}?v=${encodeURIComponent(latest.version)}${location.hash}` }, "Reload"));
+      })
+      .catch(() => {}); // offline, or opened as a file: the version alone is fine
+  }
+
   function showStorageBanner() {
     document.getElementById("storage-banner").hidden = store.ok;
   }
@@ -825,6 +855,7 @@
 
   window.addEventListener("hashchange", route);
   applyTheme();
+  showVersion();
   showStorageBanner();
   updateGoalChip();
   route();

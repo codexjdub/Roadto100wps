@@ -21,6 +21,10 @@ Everything is saved in your browser's localStorage, and nothing is sent anywhere
 
 Open `index.html` in a browser. There's no build step and there are no dependencies.
 
+## Versions
+
+The footer shows which version you're running, and tells you when the site has a newer one. Before pushing a change, run `python3 tools/bump_version.py <new version>`. It updates `version.json`, the version in `index.html`, and the `?v=` on every file link, so browsers load the new files instead of cached ones.
+
 ## Texts and licences
 
 - Classic texts are in the public domain and come from [Project Gutenberg](https://www.gutenberg.org/). Each text is cut word for word from its source; only curly quotes, dashes and accented letters were changed to characters you can type.
