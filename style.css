@@ -475,7 +475,10 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
 .steps span.skipped { opacity: 0.6; }
 .routine-plan { padding-left: 20px; max-width: 720px; }
 .routine-plan li + li { margin-top: 6px; }
-.run-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
+.routine-progress { display: flex; align-items: center; gap: 12px; margin: 4px 0 20px; }
+.routine-progress .meter { flex: 0 1 260px; margin-top: 0; }
+.run-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; }
+.run-head .link-btn { font-size: 0.875rem; }
 .run-head h2 { margin: 0; }
 .run-line { font-size: 1.125rem; margin: 8px 0; }
 .verdict-ok { color: var(--good-ink); }

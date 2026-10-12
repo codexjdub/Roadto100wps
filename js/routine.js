@@ -242,10 +242,15 @@
       render(document.getElementById("app"));
     };
     panel.append(
+      h("div", { class: "routine-progress" },
+        h("div", { class: "meter", role: "img", "aria-label": `Run ${c.done + 1} of ${c.total} today` },
+          h("div", { style: `width:${Math.round((c.done / Math.max(1, c.total)) * 100)}%` })),
+        h("span", { class: "small muted" }, `Run ${c.done + 1} of ${c.total} today`)),
       h("div", { class: "run-head" },
-        h("h2", {}, `${step.name}${made.title ? `: ${made.title.toLowerCase()} run` : ""}`, h("span", { class: "muted small" }, step.runs > 1 ? `  ${s.run + 1} of ${step.runs}` : "")),
-        h("span", { class: "small muted" }, `Run ${c.done + 1} of ${c.total} today \u00b7 `,
-          h("button", { class: "link-btn", type: "button", onclick: skip }, "skip this step"))),
+        h("h2", {}, `${step.name}${made.title ? `: ${made.title.toLowerCase()} run` : ""}`),
+        step.runs > 1 ? h("span", { class: "muted" }, `${s.run + 1} of ${step.runs}`) : null,
+        h("span", { class: "muted", "aria-hidden": "true" }, "\u00b7"),
+        h("button", { class: "link-btn", type: "button", onclick: skip }, "Skip this step")),
       h("p", { class: "ink-2" }, made.goal),
     );
     const testEl = h("div");
@@ -285,13 +290,14 @@
     const main = document.getElementById("app");
     const biggest = r.dips.slice().sort((a, b) => a.value - b.value)[0];
     const cause = biggest && (biggest.cause === "typo" ? `after a typo in "${biggest.word}"` : biggest.cause === "pause" ? `a pause at "${biggest.word}"` : `on "${biggest.word}"`);
-    el.append(
+    // (Native append prints null as the word "null", so leave out the lines that don't apply.)
+    el.append(...[
       h("p", { class: "run-line" },
         h("strong", {}, `${Math.round(r.wpm)} WPM`), ` \u00b7 ${Math.round(r.acc)}% accuracy`,
         biggest ? ` \u00b7 biggest slowdown at second ${biggest.s + 1}, ${cause}` : " \u00b7 no big slowdowns"),
-      verdict ? h("p", { class: verdict.ok ? "verdict-ok" : "ink-2" }, (verdict.ok ? "\u2713 " : "") + verdict.text) : null,
-      text ? RT.app.textCredit(text) : null,
-    );
+      verdict && h("p", { class: verdict.ok ? "verdict-ok" : "ink-2" }, (verdict.ok ? "\u2713 " : "") + verdict.text),
+      text && RT.app.textCredit(text),
+    ].filter(Boolean));
     const next = () => render(main);
     const nextLabel = s.done ? "See today's summary" : `Next: ${STEPS[s.step].name.toLowerCase()}`;
     el.append(h("div", { class: "row" }, h("button", { class: "btn primary", type: "button", onclick: next }, nextLabel, " ", h("kbd", {}, "tab"))));

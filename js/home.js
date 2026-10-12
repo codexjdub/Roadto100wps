@@ -86,7 +86,7 @@
     main.append(
       h("h1", {}, "Today"),
       card,
-      facts.length ? h("p", { class: "today-facts" }, facts.map((f, k) => [k ? " \u00b7 " : "", f])) : null,
+      h("p", { class: "today-facts" }, facts.map((f, k) => [k ? " \u00b7 " : "", f])),
       h("ul", { class: "today-links" },
         lesson
           ? h("li", {}, "Next lesson: ", h("a", { href: `#/learn/${lesson.id}` }, `${idx}. ${lesson.title} \u2192`))
