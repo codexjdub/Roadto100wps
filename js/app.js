@@ -772,22 +772,59 @@
     chip.append("average ", h("b", {}, String(round(avg))), " \u2192 100");
   }
 
-  const THEMES = ["auto", "dark", "light"];
+  // The theme on screen: your saved choice, or your system setting until you've made one.
+  function currentTheme() {
+    const mode = store.settings().themeMode;
+    if (mode === "light" || mode === "dark") return mode;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+
+  // Sun in dark mode, moon in light mode: the icon shows what a click switches to.
+  function themeIcon(theme) {
+    const NS = "http://www.w3.org/2000/svg";
+    const el = (tag, attrs) => {
+      const n = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+      return n;
+    };
+    const svg = el("svg", { viewBox: "0 0 24 24", width: "18", height: "18", "aria-hidden": "true" });
+    if (theme === "dark") {
+      svg.append(el("circle", { cx: "12", cy: "12", r: "4.5", fill: "currentColor" }));
+      for (let k = 0; k < 8; k++) {
+        const a = (k * Math.PI) / 4;
+        svg.append(el("line", {
+          x1: (12 + Math.cos(a) * 7.5).toFixed(2), y1: (12 + Math.sin(a) * 7.5).toFixed(2),
+          x2: (12 + Math.cos(a) * 10).toFixed(2), y2: (12 + Math.sin(a) * 10).toFixed(2),
+          stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round",
+        }));
+      }
+    } else {
+      svg.append(el("path", { d: "M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z", fill: "currentColor" }));
+    }
+    return svg;
+  }
+
   function applyTheme() {
     const mode = store.settings().themeMode;
-    if (mode === "auto") delete document.documentElement.dataset.theme;
-    else document.documentElement.dataset.theme = mode;
+    if (mode === "light" || mode === "dark") document.documentElement.dataset.theme = mode;
+    else delete document.documentElement.dataset.theme;
+    const theme = currentTheme();
     const btn = document.getElementById("theme-btn");
-    const label = { auto: "follows your system", dark: "dark", light: "light" }[mode];
-    btn.title = `Theme: ${label}`;
-    btn.setAttribute("aria-label", `Colour theme: ${label}. Click to change.`);
+    const label = `Switch to ${theme === "dark" ? "light" : "dark"} mode`;
+    btn.title = label;
+    btn.setAttribute("aria-label", label);
+    btn.replaceChildren(themeIcon(theme));
   }
+  // One click always flips what's on screen. Charts colour themselves from CSS variables,
+  // so nothing needs redrawing and the page stays exactly where it is.
   document.getElementById("theme-btn").addEventListener("click", () => {
-    const mode = store.settings().themeMode;
-    store.set("themeMode", THEMES[(THEMES.indexOf(mode) + 1) % THEMES.length]);
+    store.set("themeMode", currentTheme() === "dark" ? "light" : "dark");
     applyTheme();
-    route(); // charts read colours at draw time
   });
+  if (window.matchMedia) {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    if (mq.addEventListener) mq.addEventListener("change", applyTheme); // keep the icon right while following the system
+  }
 
   // The footer shows this page's version, and says so when the site has a newer one
   // (browsers can keep serving an old copy for a few minutes after an update).
