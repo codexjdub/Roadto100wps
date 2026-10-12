@@ -16,7 +16,11 @@ if [ -z "$CHROME" ]; then
 fi
 
 PORT="${PORT:-8765}"
-python3 -m http.server "$PORT" --bind 127.0.0.1 >/dev/null 2>&1 &
+# Python's standard server queues only 5 connections. Chrome opens more than that at once on a
+# cold start, and the dropped requests leave the app half loaded, so queue more.
+python3 -c 'import http.server as h, sys
+class Server(h.ThreadingHTTPServer): request_queue_size = 64
+Server(("127.0.0.1", int(sys.argv[1])), h.SimpleHTTPRequestHandler).serve_forever()' "$PORT" >/dev/null 2>&1 &
 SERVER=$!
 disown "$SERVER" # so stopping it at the end doesn't print a "Terminated" notice
 PROFILE="$(mktemp -d)" # a fresh profile each run, so nothing is served from an old cache
