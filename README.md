@@ -6,7 +6,7 @@ A typing trainer for getting from the 60s to 100 words per minute. Beyond measur
 
 ## What's in it
 
-- **Home.** Always shows your next step. On a first visit: measure your starting speed, try the daily routine, then the lessons. After that: today's routine, your average and streak, your next lesson, and a month calendar showing each practice day's average WPM and the days you finished the routine.
+- **Home.** Always shows your next step. On a first visit: measure your starting speed, try the daily routine, then the lessons. After that: today's routine, your average and streak, your next lesson, and a month calendar: each practice day shaded teal by its average speed (darker is faster), routine days checked and joined into streaks, the best day starred, and the month's totals above it.
 - **Practice.** 15, 30 or 60 second word tests, scored the same way as Monkeytype so the numbers compare directly. Also quotes, paragraphs and long passages from classic books, *The Art of War* and Wikipedia, with an option to type them in lowercase without punctuation.
 - **Results that explain themselves.** A per-second speed graph with each slowdown numbered and labelled (for example "right after a typo in 'between'"), what your typos cost, the words you paused on, and your slowest letter pairs.
 - **Daily routine.** About 20 minutes in a set order: a weak-pair warm-up, 10 runs taking turns between pushing past your pace and typing cleanly, trouble words, real text, and a 60-second check once a week. It picks up where you left off that day, stops early if your accuracy drops (a sign you're tired), and keeps a streak.

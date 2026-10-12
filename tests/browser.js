@@ -128,6 +128,10 @@
     if (!marked().length) doc.querySelector('.cal-head [aria-label="Previous month"]').click();
     await waitFor(() => marked().length >= 2, "practice days on the calendar");
     assert(doc.querySelector(".cal-day.routine"), "yesterday's routine isn't marked");
+    assert(doc.querySelector(".cal-day.routine .cal-marks").textContent.includes("\u2713"), "no check on a routine day");
+    assert(doc.querySelector(".cal-day.practised[class*='lvl-']"), "practice days aren't shaded by speed");
+    assert(doc.querySelector(".cal-marks") && [...doc.querySelectorAll(".cal-marks")].some((m) => m.textContent.includes("\u2605")), "no best day star");
+    assert(/Days practised\s*\d+/.test(doc.querySelector(".cal-stats").innerText), "no month stats");
     const day = marked()[0];
     assert(/^\d+$/.test(day.querySelector(".cal-wpm").textContent), "no WPM on a practice day");
     day.click();

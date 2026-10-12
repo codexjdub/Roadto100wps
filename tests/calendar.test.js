@@ -43,3 +43,14 @@ test("the month summary counts practice days and how the average moved", () => {
   assert.equal(C.monthSummary(days, 2026, 8).days, 1);
   assert.equal(C.monthSummary(days, 2026, 7).days, 0);
 });
+
+test("days are shaded in fixed speed bands, so a shade means the same speed every month", () => {
+  assert.equal(C.levelFor(45), 0);
+  assert.equal(C.levelFor(59.9), 0);
+  assert.equal(C.levelFor(60), 1);
+  assert.equal(C.levelFor(71), 2);
+  assert.equal(C.levelFor(80), 3);
+  assert.equal(C.levelFor(88), 4);
+  assert.equal(C.levelFor(92), 5);
+  assert.equal(C.levelFor(130), 5);
+});

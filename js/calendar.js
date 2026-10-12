@@ -1,5 +1,5 @@
-// A month calendar of your practice for the Home page: each day's average WPM, and the days
-// you finished the daily routine.
+// A month calendar of your practice for the Home page: each day shaded by its average speed,
+// routine days checked and chained into streaks, and the month's best day starred.
 (function () {
   const RT = (window.RT = window.RT || {});
 
@@ -45,6 +45,11 @@
     return navigator.language === "en-US" ? 0 : 1;
   }
 
+  // Speed bands for the shading, fixed so a shade means the same speed in every month:
+  // under 60, 60-67, 68-75, 76-83, 84-91, and 92 or more (close to the goal).
+  const BANDS = [60, 68, 76, 84, 92];
+  const levelFor = (wpm) => BANDS.filter((b) => wpm >= b).length;
+
   function render(container) {
     const h = RT.ui.h;
     const days = summarizeDays(RT.store.sessions(), RT.store.routineDays());
@@ -58,7 +63,7 @@
     container.append(root);
 
     const fmtDay = (d) => d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-    function describe(d, info) {
+    function describe(d, info, best) {
       if (!info) return `${fmtDay(d)}: no practice`;
       const parts = [fmtDay(d)];
       if (info.runs) {
@@ -66,25 +71,41 @@
           `average ${Math.round(info.wpm)} WPM`, `best ${Math.round(info.best)}`, `${Math.round(info.acc)}% accuracy`);
       }
       if (info.routine) parts.push("routine done");
+      if (best) parts.push("best day this month");
       return parts.join(" \u00b7 ");
     }
+
+    const stat = (label, value, unit, cls) => h("div", { class: "cal-stat" },
+      h("div", { class: "cal-stat-label" }, label),
+      h("div", { class: "cal-stat-value" + (cls ? ` ${cls}` : "") }, value, unit ? h("span", {}, ` ${unit}`) : null));
 
     function draw() {
       root.replaceChildren();
       const y = view.getFullYear();
       const m = view.getMonth();
-      const sum = monthSummary(days, y, m);
       const isCurrent = y === today.getFullYear() && m === today.getMonth();
       const canGoBack = view > new Date(earliest.getFullYear(), earliest.getMonth(), 1);
       const go = (delta) => { view = new Date(y, m + delta, 1); draw(); };
-      let summary = "No practice this month";
-      if (sum.days === 1) summary = `1 day \u00b7 ${Math.round(sum.first)} WPM`;
-      else if (sum.days > 1) summary = `${sum.days} days \u00b7 ${Math.round(sum.first)} \u2192 ${Math.round(sum.last)} WPM`;
       root.append(h("div", { class: "cal-head" },
         h("button", { class: "icon-btn", type: "button", "aria-label": "Previous month", disabled: !canGoBack, onclick: () => go(-1) }, "\u2039"),
         h("h2", {}, view.toLocaleDateString(undefined, { month: "long", year: "numeric" })),
         h("button", { class: "icon-btn", type: "button", "aria-label": "Next month", disabled: isCurrent, onclick: () => go(1) }, "\u203a"),
-        h("span", { class: "cal-summary" }, summary),
+      ));
+
+      // This month in four numbers
+      const sum = monthSummary(days, y, m);
+      const prefix = `${y}-${String(m + 1).padStart(2, "0")}-`;
+      const inMonth = Object.entries(days).filter(([k]) => k.startsWith(prefix));
+      const bestKey = inMonth.filter(([, d]) => d.runs).sort((a, b) => b[1].wpm - a[1].wpm).map(([k]) => k)[0];
+      const change = sum.days >= 2 ? Math.round(sum.last - sum.first) : null;
+      const streak = RT.routine ? RT.routine.streak() : 0;
+      root.append(h("div", { class: "cal-stats" },
+        stat("Days practised", String(sum.days)),
+        stat("Best day", bestKey ? String(Math.round(days[bestKey].wpm)) : "-", bestKey ? "WPM" : ""),
+        stat("This month", change == null ? "-" : `${change > 0 ? "+" : ""}${change}`, change == null ? "" : "WPM", change > 0 ? "up" : ""),
+        isCurrent
+          ? stat("Streak", String(streak), streak === 1 ? "day" : "days")
+          : stat("Routine days", String(inMonth.filter(([, d]) => d.routine).length)),
       ));
 
       const detail = h("p", { class: "cal-detail", "aria-live": "polite" }, "Hover over or tap a day for details.");
@@ -104,26 +125,37 @@
           continue;
         }
         const info = days[key];
+        const best = key === bestKey;
         const cls = ["cal-day"];
-        if (info && info.routine) cls.push("routine");
-        else if (info && info.runs) cls.push("practised");
+        if (info && info.runs) cls.push("practised", `lvl-${levelFor(info.wpm)}`);
+        if (info && info.routine) {
+          cls.push("routine");
+          // Join consecutive routine days into a chain, within a week row.
+          const next = days[RT.ui.dayKey(new Date(y, m, n + 1))];
+          if (next && next.routine && (lead + n) % 7 !== 0 && n < daysInMonth) cls.push("chain");
+        }
         if (key === todayKey) cls.push("is-today");
-        const label = describe(d, info);
+        const label = describe(d, info, best);
         const show = () => { detail.textContent = label; };
         grid.append(h("button", { class: cls.join(" "), type: "button", "aria-label": label, onmouseenter: show, onfocus: show, onclick: show },
           h("span", { class: "cal-num" }, String(n)),
+          h("span", { class: "cal-marks", "aria-hidden": "true" },
+            best ? h("span", { class: "cal-star" }, "\u2605") : null,
+            info && info.routine ? h("span", { class: "cal-check" }, "\u2713") : null),
           info && info.runs ? h("span", { class: "cal-wpm" }, String(Math.round(info.wpm))) : null));
       }
       root.append(grid, detail, h("div", { class: "cal-legend" },
-        h("span", {}, h("span", { class: "cal-key routine" }), "Routine done"),
-        h("span", {}, h("span", { class: "cal-key practised" }), "Practised"),
+        h("span", {}, "Slower",
+          h("span", { class: "cal-scale", "aria-hidden": "true" }, [0, 1, 2, 3, 4, 5].map((l) => h("span", { class: `lvl-${l}` }))),
+          "Faster", h("span", { class: "muted" }, "(under 60 to 92+ WPM)")),
+        h("span", {}, "\u2713 Routine done"),
+        h("span", {}, "\u2605 Best day"),
         h("span", {}, h("span", { class: "cal-key is-today" }), "Today"),
-        h("span", {}, "Numbers are that day's average WPM"),
       ));
     }
 
     draw();
   }
 
-  RT.calendar = { render, summarizeDays, monthSummary };
+  RT.calendar = { render, summarizeDays, monthSummary, levelFor };
 })();

@@ -13,7 +13,13 @@
   --accent: #2a78d6;
   --accent-ink: #1c5cab;
   --accent-wash: rgba(42, 120, 214, 0.10);
-  --cal-practised: rgba(42, 120, 214, 0.16);
+  /* calendar: teal, light (slower) to dark (faster); the ink keeps each day number readable */
+  --cal-0: #E1F5EE; --cal-ink-0: #085041;
+  --cal-1: #9FE1CB; --cal-ink-1: #085041;
+  --cal-2: #5DCAA5; --cal-ink-2: #04342C;
+  --cal-3: #16805F; --cal-ink-3: #FFFFFF;
+  --cal-4: #0F6650; --cal-ink-4: #FFFFFF;
+  --cal-5: #084C3C; --cal-ink-5: #FFFFFF;
   --series-1: #2a78d6;
   --series-2: #eb6834;
   --good: #0ca30c;
@@ -41,7 +47,12 @@
     --accent: #3987e5;
     --accent-ink: #86b6ef;
     --accent-wash: rgba(57, 135, 229, 0.14);
-    --cal-practised: rgba(57, 135, 229, 0.34);
+    --cal-0: #12392F; --cal-ink-0: #C9F0E2;
+    --cal-1: #155C49; --cal-ink-1: #E1F5EE;
+    --cal-2: #1B7F63; --cal-ink-2: #FFFFFF;
+    --cal-3: #35B48A; --cal-ink-3: #04342C;
+    --cal-4: #6FD3B0; --cal-ink-4: #04342C;
+    --cal-5: #B2EBD7; --cal-ink-5: #04342C;
     --series-1: #3987e5;
     --series-2: #d95926;
     --good-ink: #0ca30c;
@@ -62,7 +73,12 @@
   --accent: #3987e5;
   --accent-ink: #86b6ef;
   --accent-wash: rgba(57, 135, 229, 0.14);
-  --cal-practised: rgba(57, 135, 229, 0.34);
+  --cal-0: #12392F; --cal-ink-0: #C9F0E2;
+  --cal-1: #155C49; --cal-ink-1: #E1F5EE;
+  --cal-2: #1B7F63; --cal-ink-2: #FFFFFF;
+  --cal-3: #35B48A; --cal-ink-3: #04342C;
+  --cal-4: #6FD3B0; --cal-ink-4: #04342C;
+  --cal-5: #B2EBD7; --cal-ink-5: #04342C;
   --series-1: #3987e5;
   --series-2: #d95926;
   --good-ink: #0ca30c;
@@ -478,38 +494,73 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
 .cal-head h2 { margin: 0; min-width: 9.5em; text-align: center; font-size: 1.05rem; }
 .cal-head .icon-btn { font-size: 1.1rem; }
 .cal-head .icon-btn:disabled { opacity: 0.35; cursor: default; }
-.cal-summary { margin-left: auto; color: var(--ink-2); font-size: 0.875rem; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.cal-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+.cal-stat-label { font-size: 0.75rem; color: var(--ink-2); }
+.cal-stat-value { font-size: 1.25rem; font-weight: 600; }
+.cal-stat-value span { font-size: 0.75rem; font-weight: 400; color: var(--ink-2); }
+.cal-stat-value.up { color: var(--good-ink); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .cal-wd { text-align: center; font-size: 0.75rem; color: var(--muted); padding-bottom: 2px; }
 .cal-day {
   position: relative;
-  min-height: 52px;
-  border: 0;
+  min-height: 54px;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--surface);
+  background: transparent;
   color: var(--ink-2);
-  padding: 4px 6px;
+  padding: 0;
   font: inherit;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
 }
 button.cal-day { cursor: pointer; }
-button.cal-day:hover { filter: brightness(0.97); }
-.cal-num { font-size: 0.75rem; }
-.cal-wpm { align-self: center; font-weight: 600; font-size: 1rem; font-variant-numeric: tabular-nums; }
-.cal-day.practised { background: var(--cal-practised); color: var(--ink); }
-.cal-day.routine { background: var(--accent); color: #fff; }
-.cal-day.is-today { box-shadow: 0 0 0 2px var(--page), 0 0 0 4px var(--ink-2); }
-.cal-day.future { background: transparent; color: var(--muted); opacity: 0.5; }
+button.cal-day:hover { filter: brightness(0.96); }
+.cal-num { position: absolute; top: 4px; left: 6px; font-size: 0.6875rem; }
+.cal-marks { position: absolute; top: 3px; right: 5px; font-size: 0.75rem; letter-spacing: 2px; }
+.cal-wpm {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+.cal-day.practised { border-color: transparent; }
+.lvl-0 { background: var(--cal-0); color: var(--cal-ink-0); }
+.lvl-1 { background: var(--cal-1); color: var(--cal-ink-1); }
+.lvl-2 { background: var(--cal-2); color: var(--cal-ink-2); }
+.lvl-3 { background: var(--cal-3); color: var(--cal-ink-3); }
+.lvl-4 { background: var(--cal-4); color: var(--cal-ink-4); }
+.lvl-5 { background: var(--cal-5); color: var(--cal-ink-5); }
+/* Routine days get a bar along the bottom; consecutive ones join up into a chain. */
+.cal-day.routine::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 5px;
+  height: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.7;
+}
+.cal-day.routine.chain::after { right: -6px; border-radius: 2px 0 0 2px; }
+.cal-day.routine.chain + .cal-day.routine::after { left: 0; }
+.cal-day.is-today { box-shadow: 0 0 0 2px var(--page), 0 0 0 4px var(--ink); }
+.cal-day.future { border-color: transparent; color: var(--muted); opacity: 0.5; }
 .cal-detail { min-height: 1.5em; margin: 10px 0 6px; color: var(--ink-2); font-size: 0.875rem; }
-.cal-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.8125rem; color: var(--ink-2); }
+.cal-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; font-size: 0.8125rem; color: var(--ink-2); }
 .cal-legend > span { display: inline-flex; align-items: center; gap: 6px; }
-.cal-key { width: 12px; height: 12px; border-radius: 3px; background: var(--surface); }
-.cal-key.practised { background: var(--cal-practised); }
-.cal-key.routine { background: var(--accent); }
-.cal-key.is-today { box-shadow: inset 0 0 0 2px var(--ink-2); }
+.cal-scale { display: inline-flex; gap: 2px; }
+.cal-scale span { width: 14px; height: 10px; border-radius: 2px; }
+.cal-key { width: 12px; height: 12px; border-radius: 3px; }
+.cal-key.is-today { box-shadow: inset 0 0 0 2px var(--ink); }
+@media (max-width: 520px) {
+  .cal-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cal-wpm { font-size: 0.875rem; }
+  .cal-check { display: none; } /* no room beside the date; the bar still marks routine days */
+}
 
 /* --------------------------------------------------------------- routine */
 .steps { flex-wrap: wrap; }
