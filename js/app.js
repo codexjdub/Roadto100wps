@@ -313,7 +313,7 @@
     const extraEl = h("div");
     const testEl = h("div");
     const resultsEl = h("div", { class: "results", hidden: true });
-    main.append(RT.routine.bar(), cfgEl, infoEl, extraEl, testEl, resultsEl);
+    main.append(cfgEl, infoEl, extraEl, testEl, resultsEl);
     let last = null; // { opts, meta, text, record }
 
     function seg(label, key, options) {
@@ -331,20 +331,20 @@
     function drawConfig() {
       const st = store.settings();
       cfgEl.innerHTML = "";
-      cfgEl.append(seg("", "mode", [["words", "words"], ["text", "quotes"], ["drill", "drills"], ["custom", "custom"]]));
+      cfgEl.append(seg("text", "mode", [["words", "words"], ["text", "quotes"], ["drill", "drills"], ["custom", "your text"]]));
       cfgEl.append(h("span", { class: "divider", "aria-hidden": "true" }));
       if (st.mode === "words") {
-        cfgEl.append(seg("", "seconds", [[15, "15"], [30, "30"], [60, "60"]]));
-        cfgEl.append(seg("", "wordList", [["200", "200 common"], ["large", "1.4k words"]]));
+        cfgEl.append(seg("length", "seconds", [[15, "15s"], [30, "30s"], [60, "60s"]]));
+        cfgEl.append(seg("list", "wordList", [["200", "200 common"], ["large", "1.4k words"]]));
       } else if (st.mode === "text") {
-        cfgEl.append(seg("", "textLength", [["quote", "quote"], ["paragraph", "paragraph"], ["long", "long"]]));
+        cfgEl.append(seg("length", "textLength", [["quote", "quote"], ["paragraph", "paragraph"], ["long", "long"]]));
         const sel = h("select", { "aria-label": "Theme", onchange: (e) => { store.set("textTheme", e.target.value); e.target.blur(); newTest(); } },
           h("option", { value: "all" }, "all themes"),
           S.themes().map((t) => h("option", { value: t }, t)));
         sel.value = st.textTheme;
-        cfgEl.append(sel);
+        cfgEl.append(h("div", { class: "seg" }, h("span", { class: "seg-label" }, "theme"), sel));
       } else if (st.mode === "drill") {
-        cfgEl.append(seg("", "drill", [["pairs", "weak pairs"], ["words", "trouble words"]]));
+        cfgEl.append(seg("drill", "drill", [["pairs", "weak pairs"], ["words", "trouble words"]]));
         if (st.drill === "pairs") cfgEl.append(seg("as", "drillAs", [["words", "words"], ["sentences", "sentences"]]));
       }
       if (st.mode === "text" || st.mode === "custom") {
@@ -356,7 +356,7 @@
         }, "simplified")));
       }
       cfgEl.append(h("span", { class: "divider", "aria-hidden": "true" }));
-      cfgEl.append(seg("pace", "pace", [["off", "off"], ["auto", `auto (${autoPace()})`], ["fixed", "set"]]));
+      cfgEl.append(seg("pace cursor", "pace", [["off", "off"], ["auto", `auto (${autoPace()})`], ["fixed", "set"]]));
       if (st.pace === "fixed") {
         cfgEl.append(h("input", {
           type: "number", min: 10, max: 250, value: st.paceWpm, "aria-label": "Pace in WPM",
@@ -863,8 +863,8 @@
   // ------------------------------------------------------------- routing
 
   function route() {
-    const parts = (location.hash || "#/type").replace(/^#\/?/, "").split("/");
-    const page = parts[0] || "type";
+    const parts = (location.hash || "#/home").replace(/^#\/?/, "").split("/");
+    const page = ["type", "routine", "learn", "progress", "about"].includes(parts[0]) ? parts[0] : "home";
     const main = document.getElementById("app");
     setActive(null);
     document.querySelectorAll(".nav a").forEach((a) => {
@@ -876,7 +876,8 @@
     else if (page === "progress") renderProgress(main);
     else if (page === "routine") RT.routine.render(main);
     else if (page === "about") renderAbout(main);
-    else renderType(main);
+    else if (page === "type") renderType(main);
+    else RT.home.render(main);
     window.scrollTo(0, 0);
     main.focus({ preventScroll: true }); // so typing works straight after clicking a nav link
   }

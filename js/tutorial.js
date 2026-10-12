@@ -190,7 +190,7 @@
     const h = RT.ui.h;
     main.innerHTML = "";
     main.append(
-      h("h1", {}, "Learn"),
+      h("h1", {}, "Lessons"),
       h("p", { class: "ink-2" }, "Seven short lessons. Each one explains a technique, then gives you an exercise and a target to pass. Lessons 1 to 3 cover the most common reasons people get stuck in the 60s and 70s."),
     );
     const list = h("div", { class: "lessons" });

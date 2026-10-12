@@ -32,13 +32,12 @@
     const el = document.createElement("div");
     el.className = "test";
     el.innerHTML = `
-      <div class="test-top" aria-live="off"><span class="live-main"></span><span class="live-wpm"></span><span class="caps" hidden>Caps Lock is on</span></div>
+      <div class="test-top" aria-live="off"><span class="live-main"></span><span class="live-wpm"></span><span class="test-hint"></span><span class="caps" hidden>Caps Lock is on</span></div>
       <div class="words-wrap" role="textbox" aria-label="Typing area. Start typing to begin.">
         <div class="words"></div>
         <div class="ghost" hidden></div>
         <div class="caret idle"></div>
-      </div>
-      <div class="test-hint"></div>`;
+      </div>`;
     root.appendChild(el);
     const $ = (s) => el.querySelector(s);
     const wordsEl = $(".words");
@@ -83,7 +82,7 @@
       ghostEl.hidden = true;
       liveWpm.textContent = "";
       updateLive(0);
-      hintEl.textContent = opts.hint || "Start typing when you're ready.";
+      hintEl.textContent = opts.hint || "Type the grey text. The timer starts with your first key. Tab gives you a new test.";
       requestAnimationFrame(placeCaret);
     }
 

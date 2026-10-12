@@ -277,7 +277,7 @@ button { font: inherit; color: inherit; }
   .caret { transition: none; }
   .caret.idle { animation: none; }
 }
-.test-hint { margin-top: 16px; color: var(--muted); font-size: 0.875rem; text-align: center; min-height: 1.3em; }
+.test-top .test-hint { color: var(--ink-2); font: 400 0.9375rem var(--font); }
 
 /* --------------------------------------------------------------- results */
 .results { max-width: 920px; margin: 0 auto; }
@@ -430,19 +430,47 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
 .steps span.on { color: var(--accent-ink); background: var(--accent-wash); font-weight: 600; }
 .steps span.done { color: var(--good-ink); }
 
-/* --------------------------------------------------------------- routine */
-.routine-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-  color: var(--ink-2);
-  margin: 4px auto 0;
+/* ------------------------------------------------------------------ home */
+.plan { list-style: none; padding: 0; margin: 20px 0; max-width: 680px; counter-reset: plan; }
+.plan li {
+  counter-increment: plan;
+  position: relative;
+  padding: 14px 16px 14px 56px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
 }
-.routine-bar .btn { padding: 3px 10px; font-size: 0.8125rem; }
-.routine-bar.done { color: var(--good-ink); }
+.plan li + li { margin-top: 10px; }
+.plan li::before {
+  content: counter(plan);
+  position: absolute;
+  left: 16px;
+  top: 14px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 600 0.875rem var(--mono);
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+.plan li.next { border-color: var(--accent); }
+.plan li.next::before { background: var(--accent); color: #fff; }
+.plan li.done::before { background: var(--good); color: #fff; }
+.plan li.done .plan-title { color: var(--good-ink); }
+.plan-title { font-weight: 600; }
+.plan-text { color: var(--ink-2); margin: 2px 0 0; }
+.plan .btn { margin-top: 10px; }
+.today { max-width: 680px; margin: 16px 0; padding: 18px 20px; border-color: var(--accent); }
+.today.done { border-color: var(--border); }
+.today .today-title { font-size: 1.125rem; font-weight: 600; margin-bottom: 4px; }
+.today.done .today-title { color: var(--good-ink); }
+.today-facts { color: var(--ink-2); }
+.today-links { list-style: none; padding: 0; }
+.today-links li + li { margin-top: 6px; }
+
+/* --------------------------------------------------------------- routine */
 .steps { flex-wrap: wrap; }
 .steps span.skipped { opacity: 0.6; }
 .routine-plan { padding-left: 20px; max-width: 720px; }

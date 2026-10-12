@@ -342,20 +342,12 @@
     RT.app.setActive(null);
   }
 
-  // A one-line status for the top of the Type page.
-  function bar() {
-    const h = RT.ui.h;
+  // Today's progress, for the Home page.
+  function status() {
     const s = state();
-    const n = streak();
-    const go = h("a", { class: "btn", href: "#/routine" }, s.done ? "View" : s.started ? "Continue" : "Start");
-    let text;
-    if (s.done) text = `Daily routine done for today${n ? ` \u00b7 ${streakText(n)}` : ""}.`;
-    else if (s.started) {
-      const c = counts(s, context());
-      text = `Daily routine: ${c.done} of ${c.total} runs done.`;
-    } else text = `Daily routine: about 20 minutes of practice in the right order.${n ? ` ${streakText(n)}.` : ""}`;
-    return h("div", { class: "routine-bar" + (s.done ? " done" : "") }, h("span", {}, text), go);
+    const c = counts(s, context());
+    return { started: s.started, done: s.done, doneRuns: c.done, total: c.total, streak: streak() };
   }
 
-  RT.routine = { STEPS, render, bar, streak, lastCheck };
+  RT.routine = { STEPS, render, status, streak, lastCheck };
 })();
