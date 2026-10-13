@@ -171,11 +171,13 @@
   it("typing past five lines never removes or moves the text", async () => {
     await boot("#/type", { settings: { mode: "words", seconds: 60 } });
     const first = doc.querySelector(".words .word");
-    const top = first.getBoundingClientRect().top;
+    // Position on the page, not in the window: the page itself may scroll to follow the cursor.
+    const pageTop = () => first.getBoundingClientRect().top + win.scrollY;
+    const top = pageTop();
     const count = doc.querySelectorAll(".words .word").length;
     await typeWords(70, 6);
     assert(first.isConnected, "the first word was removed");
-    assert(Math.abs(first.getBoundingClientRect().top - top) < 1, "the first line moved");
+    assert(Math.abs(pageTop() - top) < 1, "the first line moved");
     assert(doc.querySelectorAll(".words .word").length >= count, "words disappeared");
     key("Escape");
   });
