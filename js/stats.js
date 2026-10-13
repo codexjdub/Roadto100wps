@@ -104,7 +104,7 @@
     const good = presses.filter((e) => e.ok).length;
     const acc = presses.length ? (good / presses.length) * 100 : 0;
 
-    // Per-second speed: keypresses in each second, like Monkeytype's grey "raw" line.
+    // Per-second speed: keypresses in each second, like Monkeytype's gray "raw" line.
     const n = Math.max(1, Math.ceil(durationMs / 1000));
     const counts = new Array(n).fill(0);
     const errs = new Array(n).fill(0);

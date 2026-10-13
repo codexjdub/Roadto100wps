@@ -24,7 +24,7 @@
     return out;
   }
 
-  // Days practised in a month (month is 0-11), and the daily average on the first and last of them.
+  // Days practiced in a month (month is 0-11), and the daily average on the first and last of them.
   function monthSummary(days, year, month) {
     const prefix = `${year}-${String(month + 1).padStart(2, "0")}-`;
     const keys = Object.keys(days).filter((k) => k.startsWith(prefix) && days[k].runs).sort();
@@ -100,7 +100,7 @@
       const change = sum.days >= 2 ? Math.round(sum.last - sum.first) : null;
       const streak = RT.routine ? RT.routine.streak() : 0;
       root.append(h("div", { class: "cal-stats" },
-        stat("Days practised", String(sum.days)),
+        stat("Days practiced", String(sum.days)),
         stat("Best day", bestKey ? String(Math.round(days[bestKey].wpm)) : "-", bestKey ? "WPM" : ""),
         stat("This month", change == null ? "-" : `${change > 0 ? "+" : ""}${change}`, change == null ? "" : "WPM", change > 0 ? "up" : ""),
         isCurrent
@@ -127,7 +127,7 @@
         const info = days[key];
         const best = key === bestKey;
         const cls = ["cal-day"];
-        if (info && info.runs) cls.push("practised", `lvl-${levelFor(info.wpm)}`);
+        if (info && info.runs) cls.push("practiced", `lvl-${levelFor(info.wpm)}`);
         if (info && info.routine) {
           cls.push("routine");
           // Join consecutive routine days into a chain, within a week row.

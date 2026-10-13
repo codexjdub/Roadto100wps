@@ -31,7 +31,7 @@ test("quotes and brackets are balanced", () => {
   }
 });
 
-test("sources are credited with the right licence", () => {
+test("sources are credited with the right license", () => {
   for (const t of TEXTS) {
     if (t.source === "Wikipedia") {
       assert.equal(t.license, "CC BY-SA 4.0", t.id);

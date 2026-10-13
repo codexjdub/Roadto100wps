@@ -76,7 +76,7 @@
       caretEl.classList.add("idle");
       liveWpm.textContent = "";
       updateLive(0);
-      hintEl.textContent = opts.hint || "Type the grey text. The timer starts with your first key. Tab gives you a new test.";
+      hintEl.textContent = opts.hint || "Type the gray text. The timer starts with your first key. Tab gives you a new test.";
       requestAnimationFrame(placeCaret);
     }
 

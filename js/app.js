@@ -61,7 +61,7 @@
     const t = e.target;
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
     if (!active) return;
-    // Keyboard users who have focused a control keep normal Tab/Enter/Space behaviour.
+    // Keyboard users who have focused a control keep normal Tab/Enter/Space behavior.
     const onControl = t && t !== document.body && t.id !== "app" && t.closest && t.closest("button, a, summary, [tabindex]");
     if (onControl) return;
     if (e.key === "Tab") {
@@ -236,7 +236,7 @@
       h("h3", {}, "Words you paused on"),
       words.length
         ? [h("div", {}, words.map((w) => h("span", { class: "pill" }, w))),
-          h("p", { class: "small", style: "margin:8px 0 0" }, h("a", { href: "#/type", onclick: drillLink("words") }, "Practise your trouble words"))]
+          h("p", { class: "small", style: "margin:8px 0 0" }, h("a", { href: "#/type", onclick: drillLink("words") }, "Practice your trouble words"))]
         : h("p", { class: "ink-2" }, "Nothing stood out."),
     ));
     // Letter pairs
@@ -407,10 +407,10 @@
         opts = { source: S.troubleDrill(words, RT.stats.timingBaseline(sessions)), seconds: 0, maxSeconds: 120 };
         meta = { mode: "trouble", label: "Trouble words" };
       } else {
-        const area = h("textarea", { class: "custom", placeholder: "Paste or type any text you'd like to practise, such as an email you write often.", "aria-label": "Your text" });
+        const area = h("textarea", { class: "custom", placeholder: "Paste or type any text you'd like to practice, such as an email you write often.", "aria-label": "Your text" });
         area.value = st.customText;
         extraEl.append(area, h("div", { class: "row", style: "margin:8px 0 24px" },
-          h("button", { class: "btn primary", type: "button", onclick: () => { store.set("customText", area.value); newTest(); } }, "Practise this text")));
+          h("button", { class: "btn primary", type: "button", onclick: () => { store.set("customText", area.value); newTest(); } }, "Practice this text")));
         const clean = S.normalize(st.customText || "");
         if (!clean) {
           testEl.hidden = true;
@@ -735,7 +735,7 @@
       h("p", {},
         "Wikipedia excerpts are from the opening sections of the articles below, by Wikipedia contributors, licensed under ",
         h("a", { href: "https://creativecommons.org/licenses/by-sa/4.0/", target: "_blank", rel: "noopener" }, "CC BY-SA 4.0"),
-        ". They were lightly edited for typing: pronunciation guides and non-English scripts were removed, and special characters were replaced. Each link goes to the exact revision used. The edited excerpts are shared under the same licence."),
+        ". They were lightly edited for typing: pronunciation guides and non-English scripts were removed, and special characters were replaced. Each link goes to the exact revision used. The edited excerpts are shared under the same license."),
     ));
     main.append(h("div", { class: "card" }, h("div", {}, wiki.map((t, k) => [
       h("a", { href: t.url, target: "_blank", rel: "noopener" }, t.work.replace("Wikipedia: ", "")),
@@ -797,7 +797,7 @@
     btn.setAttribute("aria-label", label);
     btn.replaceChildren(themeIcon(theme));
   }
-  // One click always flips what's on screen. Charts colour themselves from CSS variables,
+  // One click always flips what's on screen. Charts color themselves from CSS variables,
   // so nothing needs redrawing and the page stays exactly where it is.
   document.getElementById("theme-btn").addEventListener("click", () => {
     store.set("themeMode", currentTheme() === "dark" ? "light" : "dark");

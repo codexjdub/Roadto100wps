@@ -229,7 +229,7 @@
     panel.append(
       h("ol", { class: "routine-plan" }, STEPS.map((st) => h("li", {},
         h("strong", {}, st.name), st.runs > 1 ? ` (${st.runs} runs)` : "", `: ${st.about}`))),
-      h("p", { class: "small muted" }, `If your accuracy drops below ${TIRED_BELOW}% on two clean runs in a row, the routine stops early. That usually means you're tired, and practising sloppily doesn't help.`),
+      h("p", { class: "small muted" }, `If your accuracy drops below ${TIRED_BELOW}% on two clean runs in a row, the routine stops early. That usually means you're tired, and practicing sloppily doesn't help.`),
       h("button", { class: "btn primary", type: "button", onclick: begin }, "Start ", h("kbd", {}, "enter")),
     );
     RT.app.setActive({ onEnter: begin, onTab: begin });
@@ -347,7 +347,7 @@
         prev ? ` Last time: ${Math.round(prev.wpm)} WPM (${new Date(prev.ts).toLocaleDateString(undefined, { month: "short", day: "numeric" })}).` : " This is your first one, so it's the number to beat next week."));
     }
     panel.append(h("div", { class: "row" },
-      h("a", { class: "btn", href: "#/type" }, "Keep practising"),
+      h("a", { class: "btn", href: "#/type" }, "Keep practicing"),
       h("a", { class: "btn", href: "#/progress" }, "See your progress"),
     ));
     RT.app.setActive(null);

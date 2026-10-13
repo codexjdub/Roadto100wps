@@ -530,7 +530,7 @@ button.cal-day:hover { filter: brightness(0.96); }
   font-size: 1rem;
   font-variant-numeric: tabular-nums;
 }
-.cal-day.practised { border-color: transparent; }
+.cal-day.practiced { border-color: transparent; }
 .lvl-0 { background: var(--cal-0); color: var(--cal-ink-0); }
 .lvl-1 { background: var(--cal-1); color: var(--cal-ink-1); }
 .lvl-2 { background: var(--cal-2); color: var(--cal-ink-2); }

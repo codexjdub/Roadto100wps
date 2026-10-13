@@ -84,7 +84,7 @@
       id: "L4",
       title: "Common words in one motion",
       sub: "The words you type most should be your fastest.",
-      why: "About 100 words make up half of everything you type. If \"the\", \"and\" and \"that\" still come out letter by letter, every sentence pays for it. Well-practised words become one movement, like signing your name.",
+      why: "About 100 words make up half of everything you type. If \"the\", \"and\" and \"that\" still come out letter by letter, every sentence pays for it. Well-practiced words become one movement, like signing your name.",
       how: [
         "This exercise uses the 100 most common words, plus words ending in -ing, -tion, -ed and -ly.",
         "Think of the whole word, not its letters, and let your fingers roll through it.",
