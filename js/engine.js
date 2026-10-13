@@ -18,9 +18,102 @@
     return null;
   }
 
+  // ------------------------------------------------------------ recording
+  // What each key does to the record of a test, kept apart from the page so the tests
+  // run exactly this code. Times are ms since the first key.
+
+  function newRecord(words) {
+    return { words, typed: words.map(() => ""), wi: 0, events: [], wordTimes: [], typos: [], open: null, snapshots: [] };
+  }
+
+  // Typo cost: from the first wrong key in a word until that position is right again.
+  function closeTypo(s, t) {
+    s.typos.push({ w: s.open.w, i: s.open.i, t: s.open.t, ms: t - s.open.t });
+    s.open = null;
+  }
+
+  // A character key. shift: { sh, hand } when Shift was held for it. Returns false when
+  // the word can't take any more letters.
+  function recordChar(s, k, t, shift) {
+    const j = s.wi;
+    const word = s.words[j];
+    const cur = s.typed[j];
+    if (cur.length >= word.length + MAX_EXTRA) return false;
+    const i = cur.length;
+    const expected = word[i];
+    const ok = expected === k;
+    s.typed[j] = cur + k;
+    const ev = { t, k, w: j, i, ok };
+    if (expected === undefined) ev.x = 1;
+    if (shift) Object.assign(ev, shift);
+    s.events.push(ev);
+    if (!s.wordTimes[j]) s.wordTimes[j] = { start: t, end: null };
+    if (!ok && (!s.open || s.open.w !== j)) s.open = { w: j, i, t };
+    else if (ok && s.open && s.open.w === j && i + 1 >= Math.min(s.open.i + 1, word.length) && s.typed[j] === word.slice(0, i + 1)) closeTypo(s, t);
+    return true;
+  }
+
+  // The space after a word. Returns false at the start of a word, where a space does nothing.
+  // Moving to the next word is up to the caller, since the last word can end the test instead.
+  function recordSpace(s, t) {
+    const j = s.wi;
+    const typed = s.typed[j];
+    if (!typed) return false;
+    s.events.push({ t, k: " ", w: j, i: typed.length, ok: typed.length >= s.words[j].length, sp: 1 });
+    s.wordTimes[j].end = t;
+    if (s.open && s.open.w === j) {
+      s.typos.push({ w: j, i: s.open.i, t: s.open.t, ms: null }); // moved on without fixing it
+      s.open = null;
+    }
+    return true;
+  }
+
+  // Backspace, or the whole word with Option/Ctrl. Returns the word that changed, or -1.
+  function recordBackspace(s, t, wholeWord) {
+    let j = s.wi;
+    if (!s.typed[j]) {
+      // Step back into the previous word only if it has a mistake (like Monkeytype).
+      if (j === 0 || s.typed[j - 1] === s.words[j - 1]) return -1;
+      s.wi = --j;
+      const last = s.typos[s.typos.length - 1];
+      if (last && last.w === j && last.ms == null && (!s.open || s.open.w !== j + 1)) {
+        s.typos.pop(); // reopen an unfixed typo now that it's being fixed
+        s.open = { w: j, i: last.i, t: last.t };
+      } else if (s.open && s.open.w === j + 1) {
+        s.open = null; // its letters were deleted
+      }
+      s.events.push({ t, k: "Backspace", w: j, bs: 1 });
+      if (!wholeWord) return j;
+    }
+    s.typed[j] = wholeWord ? "" : s.typed[j].slice(0, -1);
+    s.events.push({ t, k: "Backspace", w: j, bs: wholeWord ? 2 : 1 });
+    // Deleting extra letters typed past the end puts the word right with no further key.
+    if (s.open && s.open.w === j && s.open.i >= s.words[j].length && s.typed[j] === s.words[j]) closeTypo(s, t);
+    return j;
+  }
+
+  // The record RT.stats.compute scores.
+  function recordOf(s, durationMs, endedOnSpace) {
+    return {
+      words: s.words,
+      typed: s.typed,
+      wi: s.wi,
+      events: s.events.filter((e) => e.t <= durationMs),
+      wordTimes: s.wordTimes,
+      typos: s.typos.concat(s.open ? [{ w: s.open.w, i: s.open.i, t: s.open.t, ms: null }] : []),
+      snapshots: s.snapshots,
+      durationMs,
+      endedOnSpace: !!endedOnSpace,
+    };
+  }
+
+  RT.recorder = { create: newRecord, char: recordChar, space: recordSpace, backspace: recordBackspace, recordOf };
+
+  // ------------------------------------------------------------ the test
+
   /**
    * opts:
-   *   source       { initial(): string[], more?(n): string[], onWord?(info), done?(): bool }
+   *   source       { initial(): string[], more?(n): string[], onWord?(info), done?(): bool, reset?() }
    *   seconds      time limit; 0 means the test ends at the end of the text
    *   maxSeconds   hard cap for open-ended drills
    *   hideActive   hide the rest of a word once you start it (reading-ahead lesson)
@@ -45,32 +138,20 @@
     const capsEl = $(".caps");
     const hintEl = $(".test-hint");
 
-    let s; // test state
+    let s; // test state: the record plus what the page needs
     let ticker = null;
 
     function reset(sameWords) {
       stopTimers();
+      // A drill that tracks your progress (trouble words) starts over too.
+      if (opts.source.reset) opts.source.reset();
       let words = sameWords && s ? s.words.slice(0, s.initialCount) : opts.source.initial().slice();
       // The text never moves while you type, so a timed test shows all of its words at once.
       if (opts.seconds && opts.source.more) {
         const need = Math.ceil((opts.seconds * SHOW_WPM) / 60);
         words = words.length >= need ? words.slice(0, need) : words.concat(opts.source.more(need - words.length));
       }
-      s = {
-        words,
-        initialCount: words.length,
-        typed: words.map(() => ""),
-        wi: 0,
-        started: false,
-        finished: false,
-        t0: 0,
-        events: [],
-        wordTimes: [],
-        typos: [],
-        open: null,
-        snapshots: [],
-        els: [],
-      };
+      s = Object.assign(newRecord(words), { initialCount: words.length, started: false, finished: false, t0: 0, els: [] });
       wordsEl.innerHTML = "";
       appendWords(words, 0);
       caretEl.classList.add("idle");
@@ -204,17 +285,7 @@
       s.finished = true;
       stopTimers();
       caretEl.classList.add("idle");
-      const record = {
-        words: s.words,
-        typed: s.typed,
-        wi: s.wi,
-        events: s.events.filter((e) => e.t <= durationMs),
-        wordTimes: s.wordTimes,
-        typos: s.typos.concat(s.open ? [{ w: s.open.w, i: s.open.i, t: s.open.t, ms: null }] : []),
-        snapshots: s.snapshots,
-        durationMs,
-        endedOnSpace: !!endedOnSpace,
-      };
+      const record = recordOf(s, durationMs, endedOnSpace);
       const result = RT.stats.compute(record);
       if (opts.onFinish) opts.onFinish(result, record);
     }
@@ -224,57 +295,28 @@
     function typeChar(k, e) {
       const now = performance.now();
       if (!s.started) start(now);
-      const j = s.wi;
-      const word = s.words[j];
-      const cur = s.typed[j];
-      if (cur.length >= word.length + MAX_EXTRA) return;
-      const i = cur.length;
-      const expected = word[i];
-      const ok = expected === k;
-      s.typed[j] = cur + k;
       const t = now - s.t0;
-      const ev = { t, k, w: j, i, ok };
-      if (expected === undefined) ev.x = 1;
-      if (e.shiftKey && SHIFTED.test(k)) {
-        ev.sh = shiftSide();
-        ev.hand = RT.stats.handOf(e.code);
-      }
-      s.events.push(ev);
-      if (!s.wordTimes[j]) s.wordTimes[j] = { start: t, end: null };
-
-      // Typo cost: from the first wrong key in a word until that position is right again.
-      // (For extra letters past the end, the word being right again is the fix.)
-      if (!ok && (!s.open || s.open.w !== j)) s.open = { w: j, i, t };
-      else if (ok && s.open && s.open.w === j && i + 1 >= Math.min(s.open.i + 1, word.length) && s.typed[j] === word.slice(0, i + 1)) {
-        s.typos.push({ w: j, i: s.open.i, t: s.open.t, ms: t - s.open.t });
-        s.open = null;
-      }
-
+      const shift = e.shiftKey && SHIFTED.test(k) ? { sh: shiftSide(), hand: RT.stats.handOf(e.code) } : null;
+      if (!recordChar(s, k, t, shift)) return;
+      const j = s.wi;
       renderWord(j);
       placeCaret();
       // A text ends as soon as its last word is typed correctly.
-      if (!opts.seconds && j === s.words.length - 1 && s.typed[j] === word && !opts.source.more) finish(t);
+      if (!opts.seconds && j === s.words.length - 1 && s.typed[j] === s.words[j] && !opts.source.more) finish(t);
     }
 
     function typeSpace() {
       if (!s.started) return;
       const j = s.wi;
-      if (!s.typed[j]) return; // a space at the start of a word does nothing
       const t = performance.now() - s.t0;
+      if (!recordSpace(s, t)) return; // a space at the start of a word does nothing
       const word = s.words[j];
-      const typed = s.typed[j];
-      s.events.push({ t, k: " ", w: j, i: typed.length, ok: typed.length >= word.length, sp: 1 });
-      s.wordTimes[j].end = t;
-      if (s.open && s.open.w === j) {
-        s.typos.push({ w: j, i: s.open.i, t: s.open.t, ms: null }); // moved on without fixing it
-        s.open = null;
-      }
       if (opts.source.onWord) {
         const wt = s.wordTimes[j];
         const prev = s.wordTimes[j - 1];
         opts.source.onWord({
           word,
-          correct: typed === word,
+          correct: s.typed[j] === word,
           gapMs: prev && prev.end != null ? wt.start - prev.end : null,
           perCharMs: (wt.end - wt.start) / word.length,
         });
@@ -295,29 +337,8 @@
 
     function backspace(wholeWord) {
       if (!s.started) return;
-      const t = performance.now() - s.t0;
-      let j = s.wi;
-      if (!s.typed[j]) {
-        // Step back into the previous word only if it has a mistake (like Monkeytype).
-        if (j === 0 || s.typed[j - 1] === s.words[j - 1] || !s.els[j - 1]) return;
-        s.wi = --j;
-        const last = s.typos[s.typos.length - 1];
-        if (last && last.w === j && last.ms == null && (!s.open || s.open.w !== j + 1)) {
-          s.typos.pop(); // reopen an unfixed typo now that it's being fixed
-          s.open = { w: j, i: last.i, t: last.t };
-        } else if (s.open && s.open.w === j + 1) {
-          s.open = null; // its letters were deleted
-        }
-        s.events.push({ t, k: "Backspace", w: j, bs: 1 });
-        if (!wholeWord) {
-          renderWord(j + 1);
-          renderWord(j);
-          placeCaret();
-          return;
-        }
-      }
-      s.typed[j] = wholeWord ? "" : s.typed[j].slice(0, -1);
-      s.events.push({ t, k: "Backspace", w: j, bs: wholeWord ? 2 : 1 });
+      const j = recordBackspace(s, performance.now() - s.t0, wholeWord);
+      if (j < 0) return;
       renderWord(j);
       renderWord(j + 1);
       placeCaret();
@@ -332,7 +353,9 @@
         backspace(e.altKey || e.ctrlKey || e.metaKey);
         return true;
       }
-      if (e.ctrlKey || e.metaKey) return false;
+      // Shortcuts are left alone, but AltGr (which Windows reports as Ctrl+Alt) types
+      // characters such as @ on many keyboard layouts.
+      if (e.metaKey || (e.ctrlKey && !e.altKey)) return false;
       if (k === " ") { typeSpace(); return true; }
       if (k.length === 1) { typeChar(k, e); return true; }
       return false;

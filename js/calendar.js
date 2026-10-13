@@ -85,11 +85,20 @@
       const m = view.getMonth();
       const isCurrent = y === today.getFullYear() && m === today.getMonth();
       const canGoBack = view > new Date(earliest.getFullYear(), earliest.getMonth(), 1);
-      const go = (delta) => { view = new Date(y, m + delta, 1); draw(); };
+      const go = (delta, e) => {
+        view = new Date(y, m + delta, 1);
+        draw();
+        // Redrawing replaces the buttons. Keep keyboard focus on the one you pressed (or on the
+        // month's name once that button is disabled), so the next Enter doesn't reach the page.
+        if (e.detail === 0) {
+          const btn = root.querySelector(`.cal-head [aria-label="${delta < 0 ? "Previous" : "Next"} month"]`);
+          (btn && !btn.disabled ? btn : root.querySelector(".cal-head h2")).focus();
+        }
+      };
       root.append(h("div", { class: "cal-head" },
-        h("button", { class: "icon-btn", type: "button", "aria-label": "Previous month", disabled: !canGoBack, onclick: () => go(-1) }, "\u2039"),
-        h("h2", {}, view.toLocaleDateString(undefined, { month: "long", year: "numeric" })),
-        h("button", { class: "icon-btn", type: "button", "aria-label": "Next month", disabled: isCurrent, onclick: () => go(1) }, "\u203a"),
+        h("button", { class: "icon-btn", type: "button", "aria-label": "Previous month", disabled: !canGoBack, onclick: (e) => go(-1, e) }, "\u2039"),
+        h("h2", { tabindex: "-1" }, view.toLocaleDateString(undefined, { month: "long", year: "numeric" })),
+        h("button", { class: "icon-btn", type: "button", "aria-label": "Next month", disabled: isCurrent, onclick: (e) => go(1, e) }, "\u203a"),
       ));
 
       // This month in four numbers

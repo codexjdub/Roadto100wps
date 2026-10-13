@@ -1,9 +1,9 @@
-// Scoring and analysis (js/stats.js).
+// Scoring and analysis (js/stats.js), from keystrokes recorded by the engine (js/engine.js).
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { load, simulate, steadyScript } = require("./helpers");
 
-const ctx = load(["js/words.js", "js/stats.js"]);
+const ctx = load(["js/words.js", "js/stats.js", "js/engine.js"]);
 const RT = ctx.RT;
 const many = (n) => Array.from({ length: n }, (_, i) => ctx.WORDS_200[(i * 7) % ctx.WORDS_200.length]);
 // Objects made inside the sandbox have their own Array/Object, so compare plain copies.
@@ -56,6 +56,26 @@ test("an unfixed typo stays wrong and its word doesn't count toward WPM", () => 
   assert.equal(typo.typos.fixed, 0);
   assert.ok(typo.wpm < clean.wpm);
   assert.equal(typo.raw, clean.raw);
+});
+
+test("deleting an extra letter fixes the typo, and the fix is timed", () => {
+  const r = RT.stats.compute(simulate(RT, ["cat", "dog"], [
+    ["c", 100], ["a", 100], ["t", 100], ["s", 100], ["BS", 200], [" ", 100], ["d", 100], ["o", 100], ["g", 100]]));
+  assert.equal(r.typos.n, 1);
+  assert.equal(r.typos.fixed, 1, "the word was right again after the backspace");
+  assert.equal(r.typos.avgMs, 200);
+  assert.equal(r.chars.extra, 0);
+});
+
+test("going back into a word with a mistake reopens its typo, and fixing it there counts", () => {
+  const r = RT.stats.compute(simulate(RT, ["cat", "dog"], [
+    ["c", 100], ["o", 100], ["t", 100], [" ", 100], // "cot", moved on
+    ["BS", 100], ["BS", 100], ["BS", 100], ["a", 100], ["t", 100], [" ", 100], // back into it, fixed
+    ["d", 100], ["o", 100], ["g", 100]]));
+  assert.equal(r.chars.incorrect, 0);
+  assert.equal(r.typos.n, 1);
+  assert.equal(r.typos.fixed, 1);
+  assert.equal(r.typos.avgMs, 600, "from the wrong o to the right a");
 });
 
 test("extra and missed letters are counted", () => {
@@ -138,6 +158,13 @@ test("trouble words add up pauses and slow words across sessions", () => {
   ]);
   assert.deepEqual(plain(rows[0]), { word: "between", count: 2 });
   assert.equal(rows.length, 3);
+});
+
+test("trouble words come from the last 40 runs, like the weak pairs", () => {
+  const sessions = Array.from({ length: 45 }, (_, i) => ({ hesitations: [i < 5 ? "older" : "recent"] }));
+  const rows = RT.stats.troubleWords(sessions);
+  assert.deepEqual(plain(rows.map((r) => r.word)), ["recent"]);
+  assert.equal(rows[0].count, 40);
 });
 
 test("drill words drop punctuation and capitals", () => {

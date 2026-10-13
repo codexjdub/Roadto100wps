@@ -67,3 +67,15 @@ test("the Shift lesson picks a text with plenty of capitals", () => {
   const t = S.capitalText();
   assert.ok((t.text.match(/[A-Z]/g) || []).length >= 3);
 });
+
+test("the trouble-word drill starts over when it's restarted or repeated", () => {
+  const words = ["alpha", "beta", "gamma"];
+  const d = S.troubleDrill(words, null);
+  for (const word of words) for (let k = 0; k < 2; k++) d.onWord({ word, correct: true, gapMs: 100, perCharMs: 100 });
+  assert.equal(d.done(), true);
+  const again = Object.assign({}, d, { initial: () => words }); // how "Same again" copies it
+  again.reset();
+  assert.equal(again.done(), false);
+  assert.equal(d.status(), "0/3 cleared", "the copy and the original share one drill");
+  assert.equal(again.more(5).length, 5);
+});

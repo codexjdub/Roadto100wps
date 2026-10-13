@@ -412,12 +412,14 @@
         extraEl.append(area, h("div", { class: "row", style: "margin:8px 0 24px" },
           h("button", { class: "btn primary", type: "button", onclick: () => { store.set("customText", area.value); newTest(); } }, "Practice this text")));
         const clean = S.normalize(st.customText || "");
-        if (!clean) {
+        const source = clean ? S.textSource(clean, st.simplified) : null;
+        if (!source || !source.initial().length) {
+          if (clean) extraEl.append(h("p", { class: "small ink-2" }, "Nothing is left to type once simplified removes the punctuation. Add some words, or turn simplified off."));
           testEl.hidden = true;
           setActive(null);
           return;
         }
-        opts = { source: S.textSource(clean, st.simplified), seconds: 0 };
+        opts = { source, seconds: 0 };
         meta = { mode: "custom", label: "Your text" };
       }
 
@@ -643,8 +645,11 @@
     main.append(dataSection());
   }
 
+  let dataNote = ""; // shown once in the data section, after an import redraws the page
+
   function dataSection() {
-    const status = h("p", { class: "small ink-2", role: "status" });
+    const status = h("p", { class: "small ink-2", role: "status" }, dataNote);
+    dataNote = "";
     const file = h("input", {
       type: "file", accept: "application/json,.json", hidden: true,
       onchange: async (e) => {
@@ -652,8 +657,9 @@
         if (!f) return;
         try {
           const added = store.importJSON(await f.text());
-          status.textContent = `Imported ${plural(added, "run")}.`;
-          setTimeout(() => route(), 1200);
+          dataNote = `Imported ${plural(added, "run")}.`;
+          updateGoalChip();
+          route();
         } catch (err) {
           status.textContent = err.message || "That file couldn't be read.";
         }

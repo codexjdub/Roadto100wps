@@ -26,13 +26,13 @@ Open `index.html` in a browser. There's no build step and there are no dependenc
 
 Two sets of tests, neither needing anything installed beyond Node and Chrome. GitHub runs both on every push (see the Actions tab).
 
-- **Logic tests** for scoring, slowdown detection, letter pairs, drills, the text collection, saving and importing history, and the routine's steps:
+- **Logic tests** for scoring (run on the engine's own keystroke recording), slowdown detection, letter pairs, drills, lesson targets, the text collection, saving, importing and syncing history across tabs, and the routine's steps:
 
   ```bash
   node --test tests/*.test.js
   ```
 
-- **Browser tests** that load the real app and type into it: text never vanishing past five lines, results with nothing broken, typo costs, the theme button, a full daily routine, and no "null" or "NaN" on any page. Run them headless with `bash tools/browser_tests.sh`, or open `tests/browser.html` from any local web server to watch them run. They use separate test storage, so your history is never touched.
+- **Browser tests** that load the real app and type into it: text never vanishing past five lines, results with nothing broken, typo costs, the theme button, the calendar, drills that start over, AltGr keys, importing, lessons that idle runs can't pass, a full daily routine, and no "null" or "NaN" on any page. Run them headless with `bash tools/browser_tests.sh`, or open `tests/browser.html` from any local web server to watch them run. They use separate test storage, so your history is never touched.
 
 ## Versions
 

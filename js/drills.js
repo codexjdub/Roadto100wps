@@ -128,7 +128,8 @@
   // Words you hesitate on come back until you type each one smoothly twice.
   function troubleDrill(words, baseline) {
     const need = 2;
-    const pool = new Map(words.map((w) => [w, 0]));
+    const fresh = () => new Map(words.map((w) => [w, 0]));
+    let pool = fresh();
     const total = pool.size;
     const gapLimit = baseline ? Math.max(baseline.gapMs * 1.3, 250) : 450;
     const charLimit = baseline ? baseline.perCharMs * 1.25 : 260;
@@ -157,6 +158,11 @@
       done: () => pool.size === 0,
       status: () => `${total - pool.size}/${total} cleared`,
       remaining: () => [...pool.keys()],
+      // Start over, when the test restarts or you do the same drill again.
+      reset() {
+        pool = fresh();
+        prev = "";
+      },
     };
   }
 

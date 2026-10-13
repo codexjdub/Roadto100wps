@@ -3,7 +3,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { load, sandbox } = require("./helpers");
 
-const session = (id, ts, extra) => Object.assign({ id, ts, mode: "words", wpm: 60, acc: 97, bigrams: { th: [100, 1, 0] }, perSecond: { raw: [60] } }, extra);
+const session = (id, ts, extra) => Object.assign({ id, ts, mode: "words", wpm: 60, acc: 97, consistency: 75, durationMs: 30000, bigrams: { th: [100, 1, 0] }, perSecond: { raw: [60] } }, extra);
 
 test("settings start with defaults and are saved", () => {
   const ctx = load(["js/storage.js"]);
@@ -58,4 +58,28 @@ test("test pages keep their own data", () => {
   ctx.RT.store.set("seconds", 15);
   assert.equal(ctx.localStorage.getItem("rt100.v1"), null);
   assert.ok(ctx.localStorage.getItem("rt100.test"));
+});
+
+test("imported runs need their time, speed and accuracy; malformed routine days are skipped", () => {
+  const store = load(["js/storage.js"]).RT.store;
+  const file = JSON.stringify({ sessions: [
+    session("good", 5),
+    session("no-time", undefined),
+    session("no-acc", 6, { acc: undefined }),
+    session("text-wpm", 7, { wpm: "fast" }),
+    session("no-consistency", 8, { consistency: null }),
+  ], routineDays: ["2026-10-01", "yesterday", 3] });
+  assert.equal(store.importJSON(file), 1);
+  assert.deepEqual([...store.sessions().map((s) => s.id)], ["good"]);
+  assert.deepEqual([...store.routineDays()], ["2026-10-01"]);
+});
+
+test("another tab's saves are picked up, so this tab doesn't overwrite them", () => {
+  const mine = load(["js/storage.js"]);
+  const other = load(["js/storage.js"], sandbox({ localStorage: mine.localStorage })); // same browser
+  other.RT.store.addSession(session("from-other-tab", 1));
+  mine.fire("storage", { key: "rt100.v1" }); // the browser tells this tab
+  mine.RT.store.addSession(session("from-this-tab", 2));
+  const saved = JSON.parse(mine.localStorage.getItem("rt100.v1")).sessions.map((s) => s.id);
+  assert.deepEqual(saved, ["from-other-tab", "from-this-tab"]);
 });

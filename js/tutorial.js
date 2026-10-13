@@ -127,8 +127,11 @@
         goal: () => "At least 90% of capitals typed with the opposite Shift, with accuracy of 95% or more.",
         check: (r) => {
           const total = r.shift.opp + r.shift.same;
-          return r.acc >= 95 && (total === 0 || r.shift.opp / total >= 0.9);
+          return r.acc >= 95 && total > 0 && r.shift.opp / total >= 0.9;
         },
+        explain: (r) => (r.shift.opp + r.shift.same === 0
+          ? "No Shift presses were picked up, so this can't be checked. Type the capitals with the Shift keys rather than Caps Lock."
+          : null),
       }],
     },
     {
@@ -177,6 +180,12 @@
       steps: [],
     },
   ];
+
+  // Why a run can't pass, when it was one you stopped typing in or too short to measure.
+  const NOT_COUNTED = {
+    idle: "This run doesn't count because you stopped typing for a while.",
+    short: "This run was too short to count.",
+  };
 
   function context() {
     const sessions = RT.store.sessions();
@@ -259,9 +268,11 @@
       const test = RT.app.startTest(testEl, Object.assign({}, made, {
         onFinish(result) {
           RT.app.saveSession(result, { mode: "lesson", lesson: lesson.id, label: `Lesson ${idx + 1}: ${st.name}`, textId: made.text && made.text.id });
-          const pass = st.check(result, c);
+          const unsaved = RT.app.unsavedReason(result);
+          const pass = !unsaved && st.check(result, c);
+          const note = unsaved ? NOT_COUNTED[unsaved] : !pass && st.explain ? st.explain(result) : null;
           testEl.hidden = true;
-          showVerdict(result, pass, made.text);
+          showVerdict(result, pass, made.text, note);
         },
       }), {
         onTab: startStep,
@@ -269,11 +280,12 @@
       });
     }
 
-    function showVerdict(result, pass, text) {
+    function showVerdict(result, pass, text, note) {
       afterEl.innerHTML = "";
       const last = step === lesson.steps.length - 1;
       const verdict = h("div", { class: "verdict" + (pass ? " pass" : "") },
         h("div", { class: "verdict-title" }, pass ? (last ? "Passed. Nice work." : "Passed. On to the next run.") : "Not quite yet."),
+        note ? h("p", { class: "verdict-note" }, note) : null,
         h("div", { class: "ink-2" }, "Target: " + lesson.steps[step].goal(context())),
       );
       afterEl.append(verdict);

@@ -44,6 +44,12 @@
   let db = read();
   let ok = true;
 
+  // Another tab saved (or cleared) your history: pick up its copy, so this tab's next save
+  // doesn't overwrite what that tab wrote.
+  window.addEventListener("storage", (e) => {
+    if (e.key === KEY || e.key === null) db = read();
+  });
+
   function write() {
     try {
       localStorage.setItem(KEY, JSON.stringify(db));
@@ -54,6 +60,11 @@
     document.dispatchEvent(new CustomEvent("rt:storage", { detail: { ok } }));
     return ok;
   }
+
+  // What an imported run needs for the pages to show it.
+  const num = (x) => typeof x === "number" && Number.isFinite(x);
+  const validSession = (s) => s && s.id && num(s.ts) && num(s.wpm) && num(s.acc) && num(s.consistency) && num(s.durationMs);
+  const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
   function prune() {
     const extra = db.sessions.length - DETAIL_LIMIT;
@@ -93,7 +104,8 @@
     exportJSON() {
       return JSON.stringify({ app: "road-to-100", exported: new Date().toISOString(), data: db }, null, 1);
     },
-    // Merges sessions by id, so importing the same file twice adds nothing.
+    // Merges sessions by id, so importing the same file twice adds nothing. Runs missing what
+    // the pages need (time, speed, accuracy, consistency, length) are skipped.
     importJSON(text) {
       const parsed = JSON.parse(text);
       const data = parsed && parsed.data ? parsed.data : parsed;
@@ -101,7 +113,7 @@
       const have = new Set(db.sessions.map((s) => s.id));
       let added = 0;
       for (const s of data.sessions) {
-        if (s && s.id && typeof s.wpm === "number" && !have.has(s.id)) {
+        if (validSession(s) && !have.has(s.id)) {
           db.sessions.push(s);
           added++;
         }
@@ -110,7 +122,8 @@
       for (const [id, v] of Object.entries(data.lessons || {})) {
         if (!db.lessons[id]) db.lessons[id] = v;
       }
-      for (const day of data.routineDays || []) if (!db.routineDays.includes(day)) db.routineDays.push(day);
+      const days = Array.isArray(data.routineDays) ? data.routineDays : [];
+      for (const day of days) if (typeof day === "string" && DAY.test(day) && !db.routineDays.includes(day)) db.routineDays.push(day);
       db.routineDays.sort();
       prune();
       write();

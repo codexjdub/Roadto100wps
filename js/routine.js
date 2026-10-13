@@ -69,7 +69,7 @@
         if (made.kind === "push") {
           return r.raw >= ctx.avg + PUSH_TARGET
             ? { ok: true, text: `Kept up: ${Math.round(r.raw)} WPM raw.` }
-            : { ok: false, text: `${Math.round(r.raw)} WPM raw. Try to stay closer to the cursor next time.` };
+            : { ok: false, text: `${Math.round(r.raw)} WPM raw. Next push, go a little faster than feels comfortable; mistakes are fine.` };
         }
         return r.acc >= CLEAN_TARGET
           ? { ok: true, text: `Clean: ${r.acc.toFixed(1)}% accuracy.` }

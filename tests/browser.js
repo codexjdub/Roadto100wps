@@ -6,7 +6,6 @@
   const list = document.getElementById("results");
   const summary = document.getElementById("summary");
   const KEY = "rt100.test";
-  const DAY = 86400000;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   let win;
   let doc;
@@ -34,12 +33,25 @@
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   };
 
+  // Noon, some days ago. Seeded runs sit mid-day so they never cross midnight (or a DST change).
+  const noon = (daysAgo = 0) => {
+    const d = new Date();
+    d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() - daysAgo);
+    return d.getTime();
+  };
+  const run = (id, ts, wpm) => ({
+    id, ts, mode: "words", seconds: 30, label: "30s · 200 words", wpm, raw: wpm + 2, acc: 96, consistency: 74,
+    durationMs: 30000, wordsTyped: 30, chars: { correct: 150, incorrect: 2, extra: 0, missed: 0 },
+    typos: { n: 0, fixed: 0, totalMs: 0, avgMs: 0 }, shift: { opp: 0, same: 0 }, hesitations: [], slowWords: [],
+  });
+
   // A few days of realistic history, so every page has something to show.
   function history() {
     const sessions = [];
     for (let k = 0; k < 6; k++) {
       sessions.push({
-        id: `seed${k}`, ts: Date.now() - (3 - (k >> 1)) * DAY + k * 60000, mode: "words", seconds: k ? 30 : 60,
+        id: `seed${k}`, ts: noon(3 - (k >> 1)) + k * 60000, mode: "words", seconds: k ? 30 : 60,
         label: "30s · 200 words", wpm: 64 + k, raw: 66 + k, acc: 96, consistency: 74, durationMs: 30000, wordsTyped: 30,
         chars: { correct: 150, incorrect: 2, extra: 0, missed: 0 }, typos: { n: 2, fixed: 1, totalMs: 900, avgMs: 900 },
         shift: { opp: 2, same: 1 }, hesitations: ["between", "through", "against"], slowWords: ["government"],
@@ -47,7 +59,7 @@
         perSecond: { raw: [70, 60, 20, 75, 80, 72, 68, 30, 70, 75], wpm: [70, 65, 50, 56, 61, 63, 64, 60, 61, 62], err: [0, 0, 1, 0, 0, 0, 0, 1, 0, 0] },
       });
     }
-    return { version: 1, sessions, settings: {}, lessons: { L1: { done: true } }, routine: null, routineDays: [dayKey(Date.now() - DAY)] };
+    return { version: 1, sessions, settings: {}, lessons: { L1: { done: true } }, routine: null, routineDays: [dayKey(noon(1))] };
   }
 
   // Load the app fresh, with the given saved data (or none) and settings.
@@ -122,21 +134,28 @@
   });
 
   it("the Home calendar shows practice days, with details for each", async () => {
-    await boot("#/home", { data: history() });
-    const marked = () => doc.querySelectorAll(".cal-day.practiced, .cal-day.routine");
-    // early in a month the seeded days may all be in the month before
-    if (!marked().length) doc.querySelector('.cal-head [aria-label="Previous month"]').click();
-    await waitFor(() => marked().length >= 2, "practice days on the calendar");
-    assert(doc.querySelector(".cal-day.routine"), "yesterday's routine isn't marked");
-    assert(doc.querySelector(".cal-day.routine .cal-marks").textContent.includes("\u2713"), "no check on a routine day");
-    assert(doc.querySelector(".cal-day.practiced[class*='lvl-']"), "practice days aren't shaded by speed");
-    assert(doc.querySelector(".cal-marks") && [...doc.querySelectorAll(".cal-marks")].some((m) => m.textContent.includes("\u2605")), "no best day star");
-    assert(/Days practiced\s*\d+/.test(doc.querySelector(".cal-stats").innerText), "no month stats");
-    const day = marked()[0];
-    assert(/^\d+$/.test(day.querySelector(".cal-wpm").textContent), "no WPM on a practice day");
-    day.click();
-    assert(/average \d+ WPM/.test(doc.querySelector(".cal-detail").textContent), "clicking a day shows no details");
+    // Today's runs and routine (always in this month, whatever the date), plus a run 40 days ago.
+    const data = { version: 1, sessions: [run("old", noon(40), 61), run("a", noon() - 3600000, 78), run("b", noon(), 82)],
+      settings: {}, lessons: {}, routine: null, routineDays: [dayKey(noon())] };
+    await boot("#/home", { data });
+    const today = doc.querySelector(".cal-day.is-today");
+    assert(today && today.classList.contains("practiced") && today.classList.contains("routine"), "today isn't marked");
+    assert(today.querySelector(".cal-marks").textContent.includes("\u2713"), "no check on a routine day");
+    assert(today.querySelector(".cal-marks").textContent.includes("\u2605"), "no best day star");
+    assert(/lvl-3/.test(today.className), "practice days aren't shaded by speed (80 WPM is band 3)");
+    assert(today.querySelector(".cal-wpm").textContent === "80", "no WPM on a practice day");
+    assert(/Days practiced\s*1\b/.test(doc.querySelector(".cal-stats").innerText), "no month stats");
+    today.click();
+    assert(/average 80 WPM/.test(doc.querySelector(".cal-detail").textContent), "clicking a day shows no details");
     assertClean("the calendar");
+
+    // Changing month from the keyboard keeps focus in the calendar, so Enter can't start the routine.
+    doc.querySelector('.cal-head [aria-label="Previous month"]').click(); // like Enter on the button
+    const focused = doc.activeElement;
+    assert(focused && focused.closest(".cal-head"), "focus left the calendar");
+    focused.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+    await sleep(50);
+    assert(win.location.hash === "#/home", "Enter after changing month opened another page");
   });
 
   it("no pace cursor appears in the text", async () => {
@@ -200,6 +219,55 @@
     await sleep(50);
     assert(win.getComputedStyle(doc.body).backgroundColor === before, "the second click didn't switch back");
     key("Escape");
+  });
+
+  it("Same again on a finished trouble-word drill starts it over", async () => {
+    await boot("#/type", { data: history(), settings: { mode: "drill", drill: "words" } });
+    for (let n = 0; testRunning() && n < 80; n++) await typeWords(1, 10);
+    await waitFor(() => doc.querySelector(".results:not([hidden])"), "the drill's results");
+    key("Escape"); // Same again
+    await waitFor(() => testRunning(), "the drill again");
+    assert(/^0\/\d+ cleared$/.test(doc.querySelector(".live-main").textContent), "the drill didn't start over");
+    await typeWords(1, 10);
+    assert(testRunning(), "the repeated drill ended after one word");
+    key("Escape");
+  });
+
+  it("characters typed with AltGr (Ctrl+Alt on Windows) count", async () => {
+    await boot("#/type", { settings: { mode: "custom", customText: "Mail me at a@b.co today." } });
+    for (const w of ["Mail", "me", "at"]) { await typeText(w, 15); key(" "); await sleep(15); }
+    for (const c of "a@b.co") { key(c, c === "@" ? { ctrlKey: true, altKey: true } : {}); await sleep(15); }
+    key(" ");
+    await typeText("today.", 15);
+    await waitFor(() => doc.querySelector(".results:not([hidden])"), "results");
+    assert(doc.querySelectorAll(".big-stat .value")[1].textContent === "100%", "the @ typed with AltGr wasn't accepted");
+  });
+
+  it("custom text with nothing left to type says so", async () => {
+    await boot("#/type", { settings: { mode: "custom", customText: "!!! ... ???", simplified: true } });
+    assert(/Nothing is left to type/.test(pageText()), "no explanation");
+    assert(!doc.querySelector(".test"), "an empty test is showing");
+  });
+
+  it("importing history updates the page and the average in the header", async () => {
+    await boot("#/progress");
+    const dt = new win.DataTransfer();
+    dt.items.add(new win.File([JSON.stringify({ data: history() })], "history.json", { type: "application/json" }));
+    const input = doc.querySelector('input[type="file"]');
+    input.files = dt.files;
+    input.dispatchEvent(new win.Event("change"));
+    await waitFor(() => /Imported 6 runs/.test(pageText()), "the import message");
+    const chip = doc.getElementById("goal-chip");
+    assert(!chip.hidden && /average \d+/.test(chip.textContent), "the header average wasn't updated");
+    assert(/Recent runs/.test(pageText()), "the page didn't show the imported runs");
+  });
+
+  it("a lesson run you stopped typing in doesn't pass", async () => {
+    await boot("#/learn/L3", { data: history() });
+    await typeWords(2, 15); // then nothing until the 30 seconds are up
+    await waitFor(() => doc.querySelector(".verdict"), "the lesson's verdict", 60000);
+    assert(/Not quite yet/.test(pageText()), "an idle run passed the lesson");
+    assert(/stopped typing/.test(pageText()), "no reason given");
   });
 
   it("no page shows null, undefined or NaN", async () => {

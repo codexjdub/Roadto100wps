@@ -287,8 +287,8 @@
       .sort((x, y) => y.score - x.score);
   }
 
-  // Words you most often paused before or typed slowly.
-  function troubleWords(sessions, limit = 30) {
+  // Words you most often paused before or typed slowly, over the same 40 runs as weakPairs.
+  function troubleWords(sessions, limit = 40) {
     const counts = new Map();
     for (const s of sessions.slice(-limit)) {
       for (const w of [...(s.hesitations || []), ...(s.slowWords || [])]) counts.set(w, (counts.get(w) || 0) + 1);
